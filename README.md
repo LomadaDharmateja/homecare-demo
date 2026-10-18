@@ -10,12 +10,16 @@ A small, local demo of automating customer-request intake for an everyday-help s
 - **Project 2, `n8n/` (low-code):** two n8n workflows. **A** webhook → agent → alert if high urgency → CSV log.
   **B** daily 08:00 check of overdue callbacks → summary file.
 
-All data is synthetic and everything runs on this laptop. See [EXPLAINER.md](EXPLAINER.md) for the full
+All data is synthetic and everything runs locally. See [EXPLAINER.md](EXPLAINER.md) for the full
 walkthrough and [intake-service/eval/report.md](intake-service/eval/report.md) for accuracy.
+
+**Accuracy** on a 20-case test set never used for tuning: **90% of requests fully correct** (all six fields),
+**6/6 urgent requests caught**. That's up from 54% at the first version: most of the gain came from letting
+code check the model's extracted facts against the customer's own words.
 
 ## Run it (PowerShell)
 
-One-time setup: `cd intake-service; python -m venv .venv; .\.venv\Scripts\pip install -r requirements.txt; ollama pull qwen2.5:3b`
+One-time setup (from the cloned `homecare-demo` folder): `cd intake-service; python -m venv .venv; .\.venv\Scripts\pip install -r requirements.txt; ollama pull qwen2.5:3b`
 
 Then, from `homecare-demo\intake-service`, each in its own terminal:
 
@@ -43,8 +47,9 @@ requests also get a line in `n8n\output\alerts.log`. Evaluation: `.\.venv\Script
 
 - Demo only: no authentication, no cloud deployment, no real CRM, email or Telegram integration.
   Approving a draft changes its status; it does not send anything.
-- Synthetic data only (50 hand-written requests, English and German). The accuracy numbers come from the
-  same cases the prompts were tuned on, so expect lower accuracy on real requests.
-- The 3B model makes mistakes (see the report). Rule-based guardrails catch some of them, and a human reviews every reply.
+- Synthetic data only (100 hand-written requests in three sets, English and German). Real messages will be
+  messier, so expect lower accuracy than on the test set.
+- The 3B model still makes mistakes, more often in German. Drafted replies sometimes imply a booking or a
+  time. Rule-based guardrails catch some errors, and a human reviews every reply.
 - Production would need a GDPR data-protection review, an EU AI Act risk classification, access control,
   retention rules and a real integration with the CRM and messaging channels.

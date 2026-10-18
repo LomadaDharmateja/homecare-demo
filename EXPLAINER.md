@@ -56,11 +56,17 @@ n8n schedule 08:00 ──► FastAPI /overdue ──► IF count > 0 ──► o
 
 ## 4. Data
 
-- **Source:** `intake-service/data/synthetic_requests.json`, written by hand (by the AI assistant during the build)
-  in one pass. Nothing was downloaded. All names are fictional, there are no addresses (city names only),
-  and there is no real personal data.
-- **Size and mix:** 50 requests. 15 high urgency, 20 medium, 15 low. 39 English, 11 German, several with
-  typos or informal style. 16 ask for a callback, 9 name no city, a few are deliberately vague.
+- **Source:** three JSON files in `intake-service/data/`, written by hand (by the AI assistant during the build).
+  Nothing was downloaded. All names are fictional, there are no addresses (city names only), and there
+  is no real personal data.
+
+  | File | Cases | Role |
+  |---|---|---|
+  | `synthetic_requests.json` | 50 (15 high / 20 medium / 15 low, 11 German) | **Tuning set**: prompts and rules were adjusted while looking at its failures |
+  | `holdout_requests.json` | 30 (9 / 12 / 9, 8 German), different cities and phrasing | **Held-out set**: written after the first tuning, but its failures guided the last round |
+  | `final_test_requests.json` | 20 (6 / 8 / 6, 5 German) | **Final test**: written before the last round, run but never inspected for tuning |
+
+- **Mix:** several with typos or informal style, some asking for a callback, some with no city, a few deliberately vague.
 - **Structure of one item:**
   ```json
   {"id": 4, "language": "de", "channel": "web_form", "text": "Guten Tag, meine Oma in Düsseldorf ...",
@@ -85,12 +91,21 @@ n8n schedule 08:00 ──► FastAPI /overdue ──► IF count > 0 ──► o
   name a tool that does not exist, repeat one, or produce free text. Output length is capped
   (`num_predict=400`) because a small model can loop endlessly (this happened once in testing).
 - **The tools (`app/tools.py`)** are plain Python functions that return dicts:
-  - `extract_fields`: LLM call with the `ExtractedFields` schema (from `app/schemas.py`).
+  - `extract_fields`: LLM call with the `ExtractedFields` schema (from `app/schemas.py`), with four worked
+    examples in the prompt (invented, not taken from any test set). Then a **grounding check**
+    (`ground_in_text`) verifies every extracted fact against the customer's own words:
+    - A date phrase must appear in the text and must not be vague ("next year", "irgendwann"), otherwise it
+      is discarded. If the model found none, a fixed list of day/time expressions is checked as a backstop.
+    - A city must appear in the text. A misspelt copy ("henne") is snapped to the closest word the customer
+      wrote ("herne"), and descriptions like "near the station" are rejected.
+    - `callback_requested` needs a call word (call, ring, anrufen…). A contact time needs a call or reach word.
+    Every correction is stored in the audit log as `grounding_corrections`, next to what the model said.
   - `check_missing_info`: **rules, not the model.** No city → `location`; no concrete day → `date`; service `other` → `details`.
   - `set_priority`: **rules.** high = 1; medium = 2 with callback, else 3; low = 4 with callback, else 5.
     Safety floor: if the extracted time says today/tonight/heute/…, urgency is raised to high; a concrete day
     raises low to medium. Rules can only *raise* urgency, never lower it.
-  - `draft_followup`: LLM writes a short reply in the customer's language, told never to confirm a booking or promise a time or price.
+  - `draft_followup`: LLM writes a short reply in the customer's language, told never to confirm a booking or
+    promise a time or price. If the model drops the sign-off, code adds it.
 - **Guardrails:** extraction is always forced first. If extraction fails, the record gets priority 1 and
   "needs manual triage", so it is never silently sorted to the bottom. If the model finishes without the two
   rule-based tools, they run anyway. Every override is written to the audit log as `guardrail`.
@@ -115,30 +130,47 @@ n8n schedule 08:00 ──► FastAPI /overdue ──► IF count > 0 ──► o
 
 ## 7. Evaluation
 
-`eval/run_eval.py` runs all 50 requests through the **full agent loop** (separate database `data/eval.db`)
-and compares six fields with the labels. Location is case-insensitive and missing_info is compared as a set.
-Results from `eval/report.md` (qwen2.5:3b, temperature 0, ~4.4 s per request):
+`eval/run_eval.py` runs all 100 requests (three sets) through the **full agent loop** (separate database
+`data/eval.db`) and compares six fields with the labels. Location is case-insensitive and missing_info is
+compared as a set. Current results from `eval/report.md` (qwen2.5:3b, temperature 0, ~4.3 s per request):
 
-| Field | Accuracy |
-|---|---|
-| service_type | 86% |
-| urgency | 78% |
-| callback_requested | 94% |
-| preferred_contact_time | 90% |
-| location | 98% |
-| missing_info | 80% |
-| **all six correct** | **54%** |
-| **high-urgency recall** | **15/15** |
+| Field | Final test (20) | Held-out (30) | Tuning (50) |
+|---|---|---|---|
+| service_type | 100% | 100% | 92% |
+| urgency | 95% | 100% | 100% |
+| callback_requested | 100% | 100% | 100% |
+| preferred_contact_time | 95% | 100% | 100% |
+| location | 100% | 100% | 100% |
+| missing_info | 100% | 100% | 96% |
+| **all six correct** | **90%** | 100% | 90% |
+| **high-urgency recall** | **6/6** | 9/9 | 15/15 |
+
+**Which number to quote: the final test, 90%.** The held-out 100% is inflated, because that set's failures
+guided the last round of rules. The final test set was written before that round and never used for tuning.
+It's still only 20 cases (one case = 5 points), and results move by a case or two between runs even at
+temperature 0 (GPU arithmetic is not perfectly deterministic).
+
+**How the score went from 54% to 90%** (all six fields correct, tuning set → final test):
+
+| Round | Change | Tuning set | Held-out | Final test |
+|---|---|---|---|---|
+| 0 | First prompts, model decides everything | 6% | – | – |
+| 1 | Model extracts facts, rules derive missing_info and priority | 42% | – | – |
+| 2 | Raise-only urgency safety floor | 54–58% | 70% | – |
+| 3 | Worked examples + grounding check + time-phrase backstop | 90% | 100%* | **90%** |
+
+\* inflated, see above. The biggest single lesson: most errors were not "the model is too small" but "the model
+was asked to judge something that a rule can check". Letting the model read the text and letting code
+check the result against the text did most of the work.
 
 **Known failures** (full list in the report):
-- Pharmacy and medicine pick-ups are often labelled `transport` instead of `shopping`.
-- Appointment times ("at 2 pm") are sometimes read as the preferred contact time.
-- Over-triage: some medium cases become high, and vague low requests ("after the summer") become medium,
-  because the model copies a vague phrase as a "concrete day". This is the safe direction of error.
-- "near the station" was accepted as a location.
-
-**Caveat:** prompts and rules were improved by looking at failures on these same 50 cases, and there is no
-held-out test set. Expect lower accuracy on real requests.
+- **German is the weak spot.** Both final-test failures are German: "abends" (evenings) read as afternoon,
+  and "es eilt aber nicht" (no rush) still rated medium.
+- Some urgent medicine pick-ups are still labelled `transport` or `companionship` instead of `shopping`.
+- A request that is clearly *about* a service but says it is unsure what is needed ("#29") is not marked `other`.
+- **Draft replies are the weakest part.** They sometimes imply a booking ("scheduled for Friday"), promise a time
+  ("tomorrow evening") or contain typos. The eval does not measure drafts. This is exactly why every draft
+  needs human approval.
 
 ## 8. What we did, step by step
 
@@ -161,8 +193,8 @@ held-out test set. Expect lower accuracy on real requests.
    clarified the prompt rules for shopping vs transport, medium urgency, and contact time.
    Result: missing_info 80%, all correct 42%, but high recall dropped to 14/15 (a same-day dialysis ride was called medium).
 9. **Improvement, round 2:** added the raise-only urgency safety floor in `set_priority`. High recall back to
-   15/15, all correct 54%. Fixed one bug in the rule (bare "now" matched "now and then"). Then stopped
-   tuning to avoid overfitting to the 50 cases.
+   15/15, all correct 54%. Fixed one bug in the rule (bare "now" matched "now and then"). Paused tuning
+   here, because further tweaks against the same 50 cases would only have been overfitting (see step 14).
 10. **Dashboard:** three tabs. Checked headlessly with Streamlit's `AppTest`: renders without errors, and
     Approve changes the status, writes the audit entry and removes the item from the overdue list.
 11. **n8n:** it turned out not to be installed. With the user's approval, pulled `n8nio/n8n` (v2.43.7) and
@@ -173,11 +205,27 @@ held-out test set. Expect lower accuracy on real requests.
     Exported the final versions to `n8n/homecare_intake_workflow.json`.
 12. **Telegram:** not configured (no token, and the brief forbids external calls), so the alert is a clearly
     named node that appends to `alerts.log`.
+13. **Git:** initialised the repository and committed this version as the 54% baseline.
+14. **Honest measurement before more tuning:** wrote a 30-case held-out set with new cities and phrasing.
+    Running the unchanged code on it gave 70% all correct, but **8/9 high-urgency**: one urgent case missed.
+15. **Error analysis, round 3.** Every remaining error fell into a few classes that appeared in both sets:
+    pick-ups called transport, appointment times read as contact times, callbacks the customer never asked
+    for, price questions marked `other`, vague timing counted as a date, misspelt cities. The audit log then
+    showed something surprising: the model was **copying example phrases from my own prompt** ("the 24th",
+    "next week") into requests that never said them. Fixes: invented worked examples in the prompt, a
+    grounding check that rejects facts not backed by the customer's words, and a fixed time-phrase list as a
+    backstop when the model finds no date. The first version of the grounding was too strict and
+    dropped real dates, which lost one urgent case, so I added the backstop before re-running.
+16. **A third, final test set:** looking at held-out failures had "used up" that set, so I wrote 20 more
+    requests *before* the last run and only read their failures afterwards, for documentation.
+    Final result: **90% all correct, 6/6 high urgency**. Tuning stopped there.
+17. **Draft sign-off:** a live test showed a German draft without the sign-off (and with a promised time).
+    The sign-off is now added in code. The time promise is left to the human reviewer and documented as a limitation.
 
 ## 9. How to run everything (PowerShell)
 
 ```powershell
-cd C:\Users\ldhar\homecare-demo\intake-service
+cd homecare-demo\intake-service    # wherever you cloned the repository
 
 # one-time setup
 python -m venv .venv
@@ -191,7 +239,7 @@ ollama pull qwen2.5:3b
 .\.venv\Scripts\python.exe -m streamlit run dashboard.py
 
 # terminal 3: n8n. First time: create the container and import the workflows
-docker run -d --name n8n -p 127.0.0.1:5678:5678 -v n8n_data:/home/node/.n8n -v "C:\Users\ldhar\homecare-demo\n8n\output:/files" -e GENERIC_TIMEZONE=Europe/Berlin -e N8N_RESTRICT_FILE_ACCESS_TO=/files n8nio/n8n
+docker run -d --name n8n -p 127.0.0.1:5678:5678 -v n8n_data:/home/node/.n8n -v "$((Resolve-Path ..\n8n\output).Path):/files" -e GENERIC_TIMEZONE=Europe/Berlin -e N8N_RESTRICT_FILE_ACCESS_TO=/files n8nio/n8n
 docker cp ..\n8n\homecare_intake_workflow.json n8n:/tmp/wf.json
 docker exec n8n n8n import:workflow --input=/tmp/wf.json
 docker exec n8n n8n publish:workflow --id=HomecareIntakeA1
@@ -205,7 +253,7 @@ Invoke-RestMethod -Uri http://localhost:5678/webhook/homecare-intake -Method Pos
 # run Workflow B now instead of waiting for 08:00
 docker exec -e N8N_RUNNERS_BROKER_PORT=5690 n8n n8n execute --id=HomecareOverdueB
 
-# evaluation (about 4 minutes)
+# evaluation of all 100 cases (about 7-8 minutes)
 .\.venv\Scripts\python.exe eval\run_eval.py
 ```
 
@@ -216,8 +264,13 @@ To open the workflows in the n8n editor, go to http://localhost:5678 and create 
 
 - **No authentication** on the API, dashboard or webhook. They run on localhost only.
 - **No cloud deployment**, and no real email inbox, CRM or messaging integration. "Approve" sends nothing.
-- **English and German only**, tested on **synthetic data only** (50 cases, labelled by the same author who tuned the prompts).
-- **Small-model accuracy:** 54% of requests have all six fields right. Human review of every reply is a requirement, not an option.
+- **English and German only**, tested on **synthetic data only** (100 cases in three sets, labelled by the same
+  author who tuned the prompts). Real customer messages will be messier, so expect lower accuracy than 90%.
+- **Small-model accuracy:** 90% of unseen test requests have all six fields right, so roughly 1 in 10 has an
+  error somewhere. German is weaker than English, and drafts are not evaluated at all. Human review of every
+  reply is a requirement, not an option.
+- The grounding and time-phrase rules are keyword lists for English and German. A new language or unusual
+  phrasing needs new entries, which is a maintenance cost.
 - Not built (out of scope): editing drafts in the dashboard, an audit-log view in the dashboard,
   automatic retries, a held-out test set, Telegram alerts.
 - **What production would need:** a GDPR data-protection review (lawful basis, a data processing agreement,
