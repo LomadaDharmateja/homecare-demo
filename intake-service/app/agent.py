@@ -1,5 +1,6 @@
 """Agent loop: the model picks the next tool by name, Python executes it, repeat (max 4 steps)."""
 import json
+from datetime import timezone
 
 from app import db, tools
 from app.schemas import AgentDecision, IntakeIn
@@ -35,7 +36,9 @@ def choose_next_tool(state: dict, remaining: list[str]) -> AgentDecision:
 
 def process_request(intake: IntakeIn) -> dict:
     db.init_db()
-    request_id = db.insert_request(intake.text, intake.channel, intake.received_at.isoformat(timespec="seconds"))
+    # Store every time in UTC: the overdue check compares timestamps as text, which only works with one offset.
+    received_utc = intake.received_at.astimezone(timezone.utc).isoformat(timespec="seconds")
+    request_id = db.insert_request(intake.text, intake.channel, received_utc)
     db.log_audit(request_id, "received", input_data=intake.model_dump(mode="json"))
     state = {"request_id": request_id, "text": intake.text, "completed": []}
 
@@ -61,9 +64,10 @@ def process_request(intake: IntakeIn) -> dict:
         db.update_request(request_id, priority=1, summary="Automatic extraction failed - needs manual triage")
         db.log_audit(request_id, "guardrail", output_data={"reason": "extraction failed, flagged for manual triage"})
     else:
-        # Guardrail: the two rule-based tools are cheap and every record needs their output to be
-        # triaged correctly, so they run even if the model skipped them. Drafting stays optional.
-        for name in ("check_missing_info", "set_priority"):
+        # Guardrail: every record needs these to be triaged correctly, and every customer deserves a
+        # drafted reply, so they run even if the model finished early (seen in testing: the model chose
+        # "finish" while its own reason said a draft was required).
+        for name in ("check_missing_info", "set_priority", "draft_followup"):
             if name not in state["completed"]:
                 db.log_audit(request_id, "guardrail", output_data={"reason": f"model finished without {name}"})
                 tools.run_tool(name, state)

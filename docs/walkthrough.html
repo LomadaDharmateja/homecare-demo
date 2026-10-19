@@ -1,0 +1,401 @@
+<title>Homecare Intake Walkthrough</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bitter:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single reading column like a case file; examples are "case cards" whose steps run down a timeline. */
+:root {
+  --bg: #f2f5f5; --surface: #ffffff; --ink: #16252a; --muted: #56686d; --line: #d4dddf;
+  --accent: #0b6b72; --accent-soft: #ddeeee;
+  --high: #b93d0b; --high-soft: #fbe6da; --med: #94600a; --med-soft: #f8edd0; --low: #3b6a4f; --low-soft: #e1eee5;
+  --ai: #6a4cb8; --ai-soft: #ece7f8; --rule: #0b6b72; --rule-soft: #ddeeee;
+  --auto: #43617d; --auto-soft: #e3eaf1; --human: #2b7539; --human-soft: #e0f0e2;
+  --warn-soft: #fff4d6; --warn-line: #e3c56a;
+  --font-display: "Bitter", Georgia, "Times New Roman", serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1619; --surface: #152126; --ink: #e2eaec; --muted: #9aadb2; --line: #2a3a40;
+  --accent: #55b9c0; --accent-soft: #143439;
+  --high: #ff8d5e; --high-soft: #3a1e13; --med: #eebb4c; --med-soft: #352a10; --low: #86c9a1; --low-soft: #15301f;
+  --ai: #ad97f2; --ai-soft: #262043; --rule: #55b9c0; --rule-soft: #143439;
+  --auto: #93b3d2; --auto-soft: #1c2a38; --human: #84d08f; --human-soft: #16301a;
+  --warn-soft: #33290f; --warn-line: #7a6424; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0e1619; --surface: #152126; --ink: #e2eaec; --muted: #9aadb2; --line: #2a3a40;
+  --accent: #55b9c0; --accent-soft: #143439;
+  --high: #ff8d5e; --high-soft: #3a1e13; --med: #eebb4c; --med-soft: #352a10; --low: #86c9a1; --low-soft: #15301f;
+  --ai: #ad97f2; --ai-soft: #262043; --rule: #55b9c0; --rule-soft: #143439;
+  --auto: #93b3d2; --auto-soft: #1c2a38; --human: #84d08f; --human-soft: #16301a;
+  --warn-soft: #33290f; --warn-line: #7a6424; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.6; }
+.wrap { max-width: 860px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 64px; display: grid; gap: 56px; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.2; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2rem, 5vw, 2.8rem); font-weight: 700; }
+h2 { font-size: 1.6rem; font-weight: 700; }
+h3 { font-size: 1.15rem; font-weight: 700; }
+p { margin: 0; max-width: 65ch; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.lead { font-size: 1.15rem; color: var(--muted); }
+section { display: grid; gap: 18px; }
+.muted { color: var(--muted); }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+
+/* Problem: three pains */
+.pains { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.pain { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
+.pain strong { font-family: var(--font-display); font-size: 1.05rem; }
+
+/* Pipeline overview */
+.pipeline { display: grid; gap: 0; counter-reset: station; }
+.station { display: grid; grid-template-columns: 44px 1fr; gap: 14px; padding-block: 12px; border-bottom: 1px dashed var(--line); }
+.station:last-child { border-bottom: 0; }
+.station .num { font-family: var(--font-mono); font-size: 0.85rem; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.station .body { display: grid; gap: 4px; min-width: 0; }
+.station .title { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-weight: 700; }
+.tech { font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); }
+
+/* Who-did-it badges */
+.who { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; font-weight: 500; white-space: nowrap; }
+.who.ai { background: var(--ai-soft); color: var(--ai); }
+.who.rule { background: var(--rule-soft); color: var(--rule); }
+.who.auto { background: var(--auto-soft); color: var(--auto); }
+.who.human { background: var(--human-soft); color: var(--human); }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 0.92rem; color: var(--muted); }
+.legend span { display: inline-flex; gap: 8px; align-items: center; }
+
+.analogy { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 0 10px 10px 0; padding: 16px 20px; }
+
+/* Example picker */
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab { font: inherit; font-size: 0.95rem; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 8px 14px; border-radius: 8px; display: inline-flex; gap: 8px; align-items: center; }
+.tab:hover { border-color: var(--accent); }
+.tab[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+.tab:focus-visible, .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.dot.high { background: var(--high); } .dot.medium { background: var(--med); } .dot.low { background: var(--low); }
+
+/* Case card */
+.case { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.case-head { padding: 18px 20px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
+.case-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+.message { font-size: 1.05rem; background: var(--bg); border-radius: 8px; padding: 14px 16px; border: 1px solid var(--line); }
+.message::before { content: "Customer wrote"; display: block; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.translation { font-size: 0.92rem; color: var(--muted); font-style: italic; }
+.purpose { font-weight: 700; }
+
+.steps { list-style: none; margin: 0; padding: 8px 20px 4px; display: grid; }
+.step { display: grid; grid-template-columns: 22px 1fr; gap: 14px; position: relative; padding-bottom: 18px; }
+.step::before { content: ""; position: absolute; left: 10px; top: 24px; bottom: 0; width: 2px; background: var(--line); }
+.step:last-child::before { display: none; }
+.step .pin { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--accent); background: var(--surface); margin-top: 3px; }
+.step.flag .pin { border-color: var(--high); background: var(--high-soft); }
+.step .content { display: grid; gap: 6px; min-width: 0; }
+.step .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.step .row h3 { font-size: 1.02rem; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 2px 14px; font-size: 0.95rem; margin: 2px 0 0; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; font-family: var(--font-mono); font-size: 0.86rem; min-width: 0; overflow-wrap: anywhere; }
+.note { font-size: 0.93rem; padding: 8px 12px; border-radius: 8px; background: var(--warn-soft); border: 1px solid var(--warn-line); }
+.draft { font-size: 0.96rem; padding: 12px 14px; border-radius: 8px; border: 1px dashed var(--line); background: var(--bg); white-space: pre-line; }
+
+.outcome { padding: 16px 20px 20px; border-top: 1px solid var(--line); display: grid; gap: 12px; background: var(--bg); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-family: var(--font-mono); font-size: 0.8rem; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); }
+.chip.high { background: var(--high-soft); color: var(--high); border-color: transparent; font-weight: 500; }
+.chip.medium { background: var(--med-soft); color: var(--med); border-color: transparent; font-weight: 500; }
+.chip.low { background: var(--low-soft); color: var(--low); border-color: transparent; font-weight: 500; }
+.lesson { font-size: 0.98rem; }
+.lesson strong { font-family: var(--font-display); }
+
+/* Guarantees */
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.rules > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
+
+/* Results */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 4px; align-content: start; }
+.stat b { font-family: var(--font-display); font-size: 2rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.journey { display: grid; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: minmax(120px, 210px) 1fr; gap: 12px; align-items: center; font-size: 0.93rem; }
+.bar-track { background: var(--line); border-radius: 4px; height: 14px; position: relative; }
+.bar-fill { background: var(--accent); height: 100%; border-radius: 4px; }
+.bar-val { font-family: var(--font-mono); font-size: 0.82rem; margin-left: 8px; }
+.bar-cell { display: flex; align-items: center; min-width: 0; }
+.bar-cell .bar-track { flex: 1; }
+ul.plain { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; max-width: 65ch; }
+
+.pitch { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; display: grid; gap: 12px; }
+.pitch p { font-size: 1.05rem; }
+.btn { font: inherit; font-size: 0.9rem; cursor: pointer; border: 1px solid var(--accent); background: var(--accent); color: var(--surface); padding: 8px 14px; border-radius: 8px; justify-self: start; }
+footer { font-size: 0.88rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 18px; display: grid; gap: 6px; }
+
+@media (max-width: 520px) {
+  body { font-size: 16px; }
+  .facts { grid-template-columns: 1fr; }
+  .facts dt { margin-top: 6px; }
+  .bar-row { grid-template-columns: 1fr; gap: 4px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .case { animation: fade 0.25s ease-out; }
+  @keyframes fade { from { opacity: 0.4; } to { opacity: 1; } }
+}
+</style>
+
+<div class="wrap">
+
+<header style="display:grid;gap:14px">
+  <div class="eyebrow">Interview demo · AI &amp; Automation · HOMECARE – die Alltagshelfer</div>
+  <h1>How a customer request turns into a ready-to-handle case</h1>
+  <p class="lead">A plain-language walkthrough of the demo: what problem it solves, how it works, and four real requests followed from the moment they arrive to the moment a staff member sees them. All outputs below were produced by the running system on a laptop. Names and messages are invented.</p>
+</header>
+
+<section aria-labelledby="problem">
+  <div class="eyebrow">1 · The problem</div>
+  <h2 id="problem">Every request is read, sorted and typed in by hand</h2>
+  <p>A home-help service for elderly people gets requests by web form and email: “can someone do Mum’s shopping”, “Dad needs a lift to the doctor”, “my mother fell”. Today a staff member reads each one, decides what kind of help it is and how urgent, types it into a list, and has to remember who asked for a call back.</p>
+  <div class="pains">
+    <div class="pain"><strong>Urgent cases can wait in the pile</strong><span class="muted">A fall or missing medication sits in the same inbox as a price question, until someone happens to read it.</span></div>
+    <div class="pain"><strong>Callbacks get forgotten</strong><span class="muted">“Please call me in the afternoon” depends on someone remembering. Nobody notices when a day passes.</span></div>
+    <div class="pain"><strong>Time goes into copying, not caring</strong><span class="muted">Reading, classifying and typing up each message is routine work that takes staff away from the people they help.</span></div>
+  </div>
+</section>
+
+<section aria-labelledby="solution">
+  <div class="eyebrow">2 · The solution</div>
+  <h2 id="solution">An assistant that sorts and drafts, and people who decide</h2>
+  <p>Each new message goes through the same short route. An AI model reads it and fills in a case card. Fixed rules check the card. The system sorts it by urgency and drafts a reply, and a staff member approves every reply before anything goes out. Nothing leaves the building: the AI runs on the laptop itself, not in the cloud.</p>
+  <div class="analogy"><strong>Think of it like</strong> a careful new intern with a strict checklist. The intern reads every letter and fills in the form. The checklist catches the intern’s mistakes. A supervisor signs every reply. And there’s a notebook where every step is written down, so you can always see who decided what.</div>
+
+  <div class="legend" aria-label="Who does each step">
+    <span><span class="who ai">AI</span> the language model reads or writes</span>
+    <span><span class="who rule">Rule</span> fixed, predictable checks in code</span>
+    <span><span class="who auto">Automation</span> n8n moves data and sends alerts</span>
+    <span><span class="who human">Person</span> a staff member decides</span>
+  </div>
+
+  <div class="pipeline">
+    <div class="station"><span class="num">1</span><div class="body"><div class="title">Message arrives <span class="who auto">Automation</span></div><span class="muted">The web form or email is passed to the intake service.</span><span class="tech">n8n webhook → HTTP request to FastAPI /intake</span></div></div>
+    <div class="station"><span class="num">2</span><div class="body"><div class="title">The AI reads it and fills in a case card <span class="who ai">AI</span></div><span class="muted">What kind of help, when it’s needed, how urgent, whether to call back and when, which city, a one-line summary. It can only answer in a fixed form, so it can’t do anything except fill in fields.</span><span class="tech">tool: extract_fields · Ollama qwen2.5:3b with a JSON schema</span></div></div>
+    <div class="station"><span class="num">3</span><div class="body"><div class="title">Fact check against the customer’s own words <span class="who rule">Rule</span></div><span class="muted">A date or a city is only kept if the customer actually wrote it. A callback only counts if they used a word like “call” or “anrufen”. Corrections are written down.</span><span class="tech">ground_in_text()</span></div></div>
+    <div class="station"><span class="num">4</span><div class="body"><div class="title">What do we still need to ask? <span class="who rule">Rule</span></div><span class="muted">No city → ask for the address. No day → ask when. Unclear what help → ask what they need.</span><span class="tech">tool: check_missing_info</span></div></div>
+    <div class="station"><span class="num">5</span><div class="body"><div class="title">Urgency and place in the queue <span class="who rule">Rule</span></div><span class="muted">Priority 1 (handle first) to 5 (can wait). Safety rule: if help is needed today, it’s urgent, whatever the AI said. The rule can only raise urgency, never lower it.</span><span class="tech">tool: set_priority</span></div></div>
+    <div class="station"><span class="num">6</span><div class="body"><div class="title">A reply is drafted, and waits <span class="who ai">AI</span></div><span class="muted">A short reply in the customer’s language, marked “waiting for approval”. The system has no way to send it.</span><span class="tech">tool: draft_followup · status pending_approval</span></div></div>
+    <div class="station"><span class="num">7</span><div class="body"><div class="title">Routing <span class="who auto">Automation</span></div><span class="muted">Urgent cases trigger an alert (in the demo a line in an alert file, in real life a phone message). Every case is added to a log sheet.</span><span class="tech">n8n IF urgency = high → alerts.log · append to intake_log.csv</span></div></div>
+    <div class="station"><span class="num">8</span><div class="body"><div class="title">A staff member reviews <span class="who human">Person</span></div><span class="muted">The dashboard shows open cases, urgent ones first, and every drafted reply with Approve and Reject buttons.</span><span class="tech">Streamlit dashboard</span></div></div>
+    <div class="station"><span class="num">9</span><div class="body"><div class="title">Every morning at 8: who are we late calling back? <span class="who auto">Automation</span></div><span class="muted">Anyone who asked for a call back more than 24 hours ago and still has no approved reply goes on a morning list.</span><span class="tech">n8n schedule → GET /overdue → summary file</span></div></div>
+  </div>
+  <p class="muted">Steps 2 to 6 are run by an “agent”: the AI chooses which step comes next, but it can only choose from these four, each once, and at most four times. If it stops too early, the rules run the missing steps anyway. Every choice and every result goes into the audit log.</p>
+</section>
+
+<section aria-labelledby="examples">
+  <div class="eyebrow">3 · Four real requests, step by step</div>
+  <h2 id="examples">Follow a request through the system</h2>
+  <p>Pick an example. Each one takes a different path. These are the system’s actual outputs, mistakes included.</p>
+  <div class="tabs" role="tablist" aria-label="Examples" id="tabs"></div>
+  <div id="case" role="tabpanel" aria-live="polite"></div>
+</section>
+
+<section aria-labelledby="trust">
+  <div class="eyebrow">4 · What keeps it safe</div>
+  <h2 id="trust">The AI suggests. Rules check. People decide.</h2>
+  <div class="rules">
+    <div><strong>The AI can’t act on its own</strong><span class="muted">It can only fill in a fixed form or pick the next step from a short list. It never writes database commands and has no way to send a message.</span></div>
+    <div><strong>Nothing goes out unapproved</strong><span class="muted">Every reply waits as “pending approval”. Only a staff member’s click changes that, and even “approve” sends nothing in this demo.</span></div>
+    <div><strong>Everything is written down</strong><span class="muted">The audit log records the incoming message, each AI choice and its stated reason, each tool’s result, every rule correction and every approval, with timestamps.</span></div>
+    <div><strong>Mistakes lean towards caution</strong><span class="muted">Rules can raise urgency but never lower it. A case the AI can’t read at all goes to the top of the queue for a person to look at.</span></div>
+    <div><strong>No data leaves the laptop</strong><span class="muted">The AI model runs locally. No cloud service sees the messages, which matters for elderly people’s health information under GDPR.</span></div>
+  </div>
+</section>
+
+<section aria-labelledby="results">
+  <div class="eyebrow">5 · How well it works</div>
+  <h2 id="results">Measured on requests it had never seen</h2>
+  <p>Accuracy was checked with 100 invented, hand-labelled requests in English and German. The number that counts comes from 20 requests that were kept aside and never used while improving the system.</p>
+  <div class="stats">
+    <div class="stat"><b>90–95%</b><span class="muted">of unseen requests had all six fields right (type, urgency, callback, contact time, city, missing info). The range is two runs: one borderline German case flips between them</span></div>
+    <div class="stat"><b>6 / 6</b><span class="muted">urgent unseen requests were marked urgent. Across all 100 requests: 30 of 30</span></div>
+    <div class="stat"><b>~4 s</b><span class="muted">from message to filed, sorted case, on a laptop graphics card</span></div>
+  </div>
+  <h3>From first version to now: share of requests with every field right</h3>
+  <div class="journey" role="img" aria-label="First version 54 percent; after improvements 90 percent on the practice set and 90 to 95 percent on unseen requests">
+    <div class="bar-row"><span>First working version</span><span class="bar-cell"><span class="bar-track"><span class="bar-fill" style="width:54%;display:block"></span></span><span class="bar-val">54%</span></span></div>
+    <div class="bar-row"><span>After improvements (practice set)</span><span class="bar-cell"><span class="bar-track"><span class="bar-fill" style="width:90%;display:block"></span></span><span class="bar-val">90%</span></span></div>
+    <div class="bar-row"><span>After improvements (unseen set)</span><span class="bar-cell"><span class="bar-track"><span class="bar-fill" style="width:90%;display:block"></span></span><span class="bar-val">90–95%</span></span></div>
+  </div>
+  <p>Most of the improvement didn’t come from a bigger AI. It came from <strong>letting the AI read and letting fixed rules check</strong>. For example, the AI was copying example dates from its own instructions into requests that never mentioned a date. A rule that keeps a date only if the customer wrote it fixed that class of mistake.</p>
+  <h3>Where it still falls short</h3>
+  <ul class="plain">
+    <li><strong>Drafted replies are the weakest part.</strong> The examples above show replies that get the callback the wrong way round or say something odd. That’s why a person approves every one.</li>
+    <li><strong>German is weaker than English.</strong> The mistakes on the unseen set were German phrases (“abends” read as afternoon, “es eilt aber nicht” (no rush) still rated medium).</li>
+    <li>Everything is tested on invented data. Real messages are messier, so real accuracy will be lower.</li>
+    <li>It’s a demo: no login, no real email inbox or customer database, and approving a reply doesn’t send it.</li>
+  </ul>
+</section>
+
+<section aria-labelledby="pitch">
+  <div class="eyebrow">6 · Telling it to someone else</div>
+  <h2 id="pitch">The one-minute version</h2>
+  <div class="pitch">
+    <p id="pitch-text">Customers write in by web form or email. Instead of staff reading and typing up each message, a small AI model running on our own computer reads it and fills in a case card: what help, how urgent, which city, whether to call back. Simple rules double-check the card against what the customer actually wrote, put urgent cases at the top and raise an alert. The system drafts a reply, but nothing is sent until a staff member approves it, and every step is logged. Each morning it lists everyone we promised to call back and haven’t. On requests it had never seen, it got every field right about 9 times out of 10 and caught every urgent case.</p>
+    <button class="btn" id="copy" type="button">Copy this text</button>
+  </div>
+</section>
+
+<footer>
+  <span>Demo built for an interview. Python (FastAPI, SQLite, Streamlit), a local AI model through Ollama (qwen2.5:3b), and n8n for the automation. All people and messages are fictional.</span>
+  <span>Code and full technical explanation: github.com/LomadaDharmateja/homecare-demo</span>
+</footer>
+
+</div>
+
+<script>
+const EXAMPLES = [
+  {
+    key: "urgent", label: "Urgent: a fall", urgency: "high",
+    purpose: "Shows: an urgent case jumps the queue and raises an alert.",
+    channel: "web form", id: 1, seconds: 8.7,
+    text: "Hello, my father (84) fell in the kitchen in Neuss this morning. He's okay but very shaky and alone. Can someone stay with him today? Please call me back as soon as possible. - Maria Keller",
+    steps: [
+      { who: "auto", title: "Message arrives", body: "The web form posts the message to n8n, which passes it on to the intake service." },
+      { who: "ai", title: "The AI fills in the case card", facts: [["Type of help", "companionship (someone to stay with him)"], ["When", "“today”"], ["Urgency", "high"], ["Call back?", "yes"], ["City", "Neuss"], ["Summary", "Father fell and needs companionship in Neuss"]] },
+      { who: "rule", title: "Fact check", body: "Every fact matches the customer’s words. Nothing to correct." },
+      { who: "rule", title: "What’s missing?", body: "Nothing: city and day are both known." },
+      { who: "rule", title: "Priority", facts: [["Result", "Priority 1 of 5: handle first"]] },
+      { who: "ai", title: "Reply drafted, waiting for approval", draft: "Hello Maria, I understand this is a very urgent situation. We can certainly arrange for someone to stay with your father today. Please call me back as soon as possible so we can make the necessary arrangements. Your HOMECARE team", flag: "Mistake for the reviewer to catch: Maria asked us to call her, but the draft asks her to call us. It also promises (“we can certainly arrange”) before anyone has checked a helper is free. The staff member should reject it and call Maria directly." },
+      { who: "auto", title: "Routing: urgent alert", body: "Because urgency is high, n8n writes an alert. In a real setup this would be a push message to the person on duty.", code: "HIGH URGENCY request #1 (companionship, Neuss): Father fell and needs companionship in Neuss" },
+      { who: "human", title: "Staff member sees it at the top", body: "On the dashboard this case is first in the list, marked high, with the draft in the approval queue." }
+    ],
+    outcome: ["urgency: high", "priority 1", "alert sent", "reply waits for approval"],
+    lesson: "<strong>Why it matters:</strong> a fall gets attention within seconds instead of waiting in the inbox. The AI sorted it correctly. The reply needed a person, because it reversed the callback."
+  },
+  {
+    key: "missing", label: "Booking, but no address", urgency: "medium",
+    purpose: "Shows: the system notices what’s missing and asks for it.",
+    channel: "email", id: 2, seconds: 4.3,
+    text: "Could someone drive my mother to her physiotherapy appointment next Wednesday at 10 am? She uses a walker.",
+    steps: [
+      { who: "auto", title: "Message arrives", body: "An email is forwarded to n8n and on to the intake service." },
+      { who: "ai", title: "The AI fills in the case card", facts: [["Type of help", "transport"], ["When", "“next Wednesday at 10 am”"], ["Urgency", "medium"], ["Call back?", "no"], ["City", "the word “null” (the AI wrote “null” as if it were a place)"]] },
+      { who: "rule", title: "Fact check", body: "“null” isn’t a city, so the rule corrects it to “no city given”. This correction is written into the audit log next to what the AI said.", flagSoft: true },
+      { who: "rule", title: "What’s missing?", facts: [["Still needed", "the address / city"]] },
+      { who: "rule", title: "Priority", facts: [["Result", "Priority 3 of 5: a concrete day next week, no callback asked"]] },
+      { who: "ai", title: "Reply drafted, waiting for approval", draft: "Hello! I see you're looking for someone to drive your mother to her physiotherapy appointment next Wednesday at 10 am. We use a walker, right? Could you please let me know the location? A colleague will call you with more details.\n\nYour HOMECARE team", flag: "Good: it asks for the missing address. Odd: “We use a walker, right?” The reviewer would remove that line." },
+      { who: "auto", title: "Routing", body: "Not urgent, so no alert. One line is added to the log sheet with “missing: location”." }
+    ],
+    outcome: ["urgency: medium", "priority 3", "missing: location", "reply asks for the address"],
+    lesson: "<strong>Why it matters:</strong> today someone would have to notice the address is missing and write back. Here the gap is found automatically and the question is already drafted."
+  },
+  {
+    key: "overdue", label: "German, callback forgotten", urgency: "medium",
+    purpose: "Shows: a rule backs up the AI, and the morning check catches a forgotten callback.",
+    channel: "email", id: 3, seconds: 4.4, simulated: "Sent with a timestamp two days in the past, to simulate a request nobody followed up.",
+    text: "Guten Tag, wir suchen ab nächster Woche Hilfe beim Einkaufen für meine Oma in Köln. Bitte rufen Sie mich nachmittags an. Viele Grüße, Lukas Brandt",
+    translation: "“Hello, we’re looking for help with shopping for my grandma in Cologne from next week. Please call me in the afternoon. Best regards, Lukas Brandt”",
+    steps: [
+      { who: "auto", title: "Message arrives", body: "An email in German, received two days ago." },
+      { who: "ai", title: "The AI fills in the case card", facts: [["Type of help", "shopping"], ["When", "(left empty: the AI missed “ab nächster Woche”)"], ["Urgency", "low"], ["Call back?", "yes, in the afternoon"], ["City", "Köln"]] },
+      { who: "rule", title: "Fact check: the backup date finder", body: "The AI found no date, so a fixed list of day and time phrases checks the text and finds “nächster Woche” (next week).", flagSoft: true },
+      { who: "rule", title: "What’s missing?", body: "Nothing. With the date recovered, the case is complete." },
+      { who: "rule", title: "Priority", facts: [["AI said", "low"], ["Rule", "a concrete day means at least medium, so raised to medium"], ["Result", "Priority 2 of 5: medium, and they asked for a call back"]] },
+      { who: "ai", title: "Reply drafted in German, waiting for approval", draft: "Guten Tag, Herr Brandt. Ich habe Ihre Anfrage für Hilfe beim Einkaufen in Köln ab nächster Woche erhalten. Sollten Sie nachmittags nicht erreichbar sein, lassen Sie es mich wissen, und ich werde mich nachmittags nochmals bei Ihnen melden. Viele Grüße, Ihr HOMECARE Team.", flag: "Language matched automatically. The second sentence is muddled (“if you can’t be reached in the afternoon, let me know, and I’ll get in touch in the afternoon”). The reviewer would tidy it." },
+      { who: "auto", title: "Next morning at 8: the overdue check", body: "He asked for a call back, it’s been more than 24 hours, and no reply has been approved. So he appears on the morning list:", code: "Overdue follow-ups (callback requested, >24 h, no approved reply): 1\n- #3 [medium] received 2026-10-17: Shopping help for grandma in Köln next week" }
+    ],
+    outcome: ["urgency: medium (raised by rule)", "priority 2", "callback in the afternoon", "on the overdue list"],
+    lesson: "<strong>Why it matters:</strong> nobody has to remember the callback. If it slips, the morning list says so. And when the AI misses something, a simple rule can catch it, with the correction on record."
+  },
+  {
+    key: "vague", label: "Vague question", urgency: "low",
+    purpose: "Shows: a low-priority enquiry, and a safety net when the AI stops too early.",
+    channel: "web form", id: 4, seconds: 3.9,
+    text: "Hi, a friend told me about you. What kind of help do you offer?",
+    steps: [
+      { who: "auto", title: "Message arrives", body: "A short question through the web form." },
+      { who: "ai", title: "The AI fills in the case card", facts: [["Type of help", "other (unclear)"], ["When", "not given"], ["Urgency", "low"], ["Call back?", "no"], ["City", "not given"]] },
+      { who: "rule", title: "What’s missing?", facts: [["Still needed", "city, date, and what help they need"]] },
+      { who: "rule", title: "Priority", facts: [["Result", "Priority 5 of 5: can wait"]] },
+      { who: "ai", title: "The AI tried to stop early", body: "The agent chose “finish” without writing a reply. Its own stated reason was “followup_message_drafting_required”, which contradicts the choice.", flag: "A real AI mistake found while preparing this walkthrough." },
+      { who: "rule", title: "Safety net: a reply is always drafted", body: "Every customer should get an answer, so a rule runs the reply step anyway and logs that it did." },
+      { who: "ai", title: "Reply drafted, waiting for approval", draft: "Hi! Thank you for reaching out. We offer shopping and errands, transport to appointments, companionship visits, and household help like cleaning, laundry, and tidying. Is there a specific location or type of help you're looking for?\n\nYour HOMECARE team", note: "A good reply. An earlier version invented services the company doesn’t offer (“meal preparation”), so the drafting instructions now list the four real services." },
+      { who: "auto", title: "Routing", body: "Not urgent, no alert. Logged with “missing: location, date, details”." }
+    ],
+    outcome: ["urgency: low", "priority 5", "missing: city, date, details", "reply waits for approval"],
+    lesson: "<strong>Why it matters:</strong> simple questions get a correct, friendly answer drafted in seconds, and the case sits at the bottom of the queue where it belongs. The safety net means an AI slip doesn’t leave a customer without an answer."
+  }
+];
+
+const WHO = { ai: "AI", rule: "Rule", auto: "Automation", human: "Person" };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function renderCase(ex) {
+  const steps = ex.steps.map(s => `
+    <li class="step${s.flag && !s.draft ? " flag" : ""}">
+      <span class="pin" aria-hidden="true"></span>
+      <div class="content">
+        <div class="row"><h3>${esc(s.title)}</h3><span class="who ${s.who}">${WHO[s.who]}</span></div>
+        ${s.body ? `<p>${esc(s.body)}</p>` : ""}
+        ${s.facts ? `<dl class="facts">${s.facts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` : ""}
+        ${s.code ? `<div class="draft mono">${esc(s.code)}</div>` : ""}
+        ${s.draft ? `<div class="draft">${esc(s.draft)}</div>` : ""}
+        ${s.flag ? `<div class="note">${esc(s.flag)}</div>` : ""}
+        ${s.note ? `<p class="muted">${esc(s.note)}</p>` : ""}
+      </div>
+    </li>`).join("");
+  return `
+    <article class="case">
+      <div class="case-head">
+        <div class="case-meta"><span>Case #${ex.id}</span><span>via ${esc(ex.channel)}</span><span>filed in ${ex.seconds} s</span></div>
+        <p class="purpose">${esc(ex.purpose)}</p>
+        <div class="message">${esc(ex.text)}</div>
+        ${ex.translation ? `<p class="translation">${esc(ex.translation)}</p>` : ""}
+        ${ex.simulated ? `<p class="muted" style="font-size:0.9rem">Simulated: ${esc(ex.simulated)}</p>` : ""}
+      </div>
+      <ol class="steps">${steps}</ol>
+      <div class="outcome">
+        <div class="chips">${ex.outcome.map((o, i) => `<span class="chip${i === 0 ? " " + ex.urgency : ""}">${esc(o)}</span>`).join("")}</div>
+        <p class="lesson">${ex.lesson}</p>
+      </div>
+    </article>`;
+}
+
+const tabs = document.getElementById("tabs");
+const panel = document.getElementById("case");
+function select(index, focus) {
+  [...tabs.children].forEach((t, i) => { t.setAttribute("aria-selected", i === index); t.tabIndex = i === index ? 0 : -1; });
+  panel.innerHTML = renderCase(EXAMPLES[index]);
+  if (focus) tabs.children[index].focus();
+  try { localStorage.setItem("walkthrough-example", String(index)); } catch (e) {}
+}
+EXAMPLES.forEach((ex, i) => {
+  const b = document.createElement("button");
+  b.className = "tab"; b.type = "button"; b.role = "tab"; b.id = "tab-" + ex.key;
+  b.innerHTML = `<span class="dot ${ex.urgency}" aria-hidden="true"></span>${esc(ex.label)}`;
+  b.addEventListener("click", () => select(i));
+  b.addEventListener("keydown", e => {
+    if (e.key === "ArrowRight") select((i + 1) % EXAMPLES.length, true);
+    if (e.key === "ArrowLeft") select((i + EXAMPLES.length - 1) % EXAMPLES.length, true);
+  });
+  tabs.appendChild(b);
+});
+let start = 0;
+const fromHash = EXAMPLES.findIndex(ex => location.hash === "#" + ex.key);
+if (fromHash >= 0) start = fromHash;
+else { try { const saved = Number(localStorage.getItem("walkthrough-example")); if (saved >= 0 && saved < EXAMPLES.length) start = saved; } catch (e) {} }
+select(start);
+
+document.getElementById("copy").addEventListener("click", async e => {
+  const text = document.getElementById("pitch-text").textContent;
+  try { await navigator.clipboard.writeText(text); e.target.textContent = "Copied"; }
+  catch (err) {
+    const range = document.createRange(); range.selectNodeContents(document.getElementById("pitch-text"));
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    e.target.textContent = "Text selected: press Ctrl+C";
+  }
+  setTimeout(() => { e.target.textContent = "Copy this text"; }, 2500);
+});
+</script>

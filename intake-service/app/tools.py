@@ -169,7 +169,9 @@ def check_missing_info(state: dict) -> dict:
     return {"missing_info": missing}
 
 
-DRAFT_PROMPT = """You write short, friendly follow-up messages for a home-help service.
+DRAFT_PROMPT = """You write short, friendly follow-up messages for a home-help service for elderly people.
+The service offers exactly four things: shopping and errands, transport to appointments, companionship
+visits, and household help (cleaning, laundry, tidying). Never mention any other service.
 Write in the same language as the customer's request (English or German). At most 4 sentences.
 Thank them and repeat back what they asked for. If information is missing, ask for it. If they asked for
 a callback, say a colleague will call them. Nothing is booked yet: never say a booking or appointment is
@@ -190,7 +192,7 @@ def draft_followup(state: dict) -> dict:
     draft = FollowupDraft.model_validate_json(
         ask_llm(DRAFT_PROMPT, user_message, FollowupDraft.model_json_schema())
     ).message.strip()
-    if "HOMECARE" not in draft:  # the model sometimes drops the sign-off; add it rather than re-ask
+    if not re.search(r"homecare[ -]team", draft, re.IGNORECASE):  # the model sometimes drops the sign-off
         draft += "\n\nIhr HOMECARE-Team" if _looks_german(state["text"]) else "\n\nYour HOMECARE team"
     # Never sent from here: a human must approve it in the dashboard.
     db.update_request(state["request_id"], followup_draft=draft, followup_status="pending_approval")

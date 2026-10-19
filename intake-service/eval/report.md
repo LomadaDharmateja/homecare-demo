@@ -16,11 +16,11 @@ one case is 5 percentage points. Results also vary by a case or two between runs
 | service_type | 20/20 | 100% |
 | urgency | 19/20 | 95% |
 | callback_requested | 20/20 | 100% |
-| preferred_contact_time | 19/20 | 95% |
+| preferred_contact_time | 20/20 | 100% |
 | location | 20/20 | 100% |
 | missing_info | 20/20 | 100% |
 
-- All six fields correct: **18/20 (90%)**
+- All six fields correct: **19/20 (95%)**
 - High-urgency recall (high cases labelled high): **6/6**
 - Average time per request (full agent loop, local GPU): 4.3s
 
@@ -36,14 +36,14 @@ Urgency confusion (rows = expected, columns = predicted):
 
 | Field | Correct | Accuracy |
 |---|---|---|
-| service_type | 30/30 | 100% |
+| service_type | 29/30 | 97% |
 | urgency | 30/30 | 100% |
 | callback_requested | 30/30 | 100% |
 | preferred_contact_time | 30/30 | 100% |
 | location | 30/30 | 100% |
-| missing_info | 30/30 | 100% |
+| missing_info | 29/30 | 97% |
 
-- All six fields correct: **30/30 (100%)**
+- All six fields correct: **29/30 (97%)**
 - High-urgency recall (high cases labelled high): **9/9**
 - Average time per request (full agent loop, local GPU): 4.2s
 
@@ -78,15 +78,15 @@ Urgency confusion (rows = expected, columns = predicted):
 | medium | 0 | 20 | 0 |
 | low | 0 | 0 | 15 |
 
-### Failures in final test set (2 cases with at least one wrong field)
+### Failures in final test set (1 cases with at least one wrong field)
 
-- **#209** (de) preferred_contact_time: expected `evening`, got `afternoon`  
-  > Hallo, könnten Sie ab nächster Woche jeden Dienstag für meine Oma in Kamen einkaufen gehen? Bitte rufen Sie mich abends an. Danke, Tim Berger
 - **#219** (de) urgency: expected `low`, got `medium`  
   > Hallo, wie lange im Voraus muss man eine Einkaufshilfe buchen? Wir wohnen in Unna, es eilt aber nicht.
 
-### Failures in held-out set (0 cases with at least one wrong field)
+### Failures in held-out set (1 cases with at least one wrong field)
 
+- **#118** (en) service_type: expected `other`, got `companionship`; missing_info: expected `['details', 'location']`, got `['location']`  
+  > Need help this week, my mother is overwhelmed and I'm not sure what she needs most. Please call me.
 
 ### Failures in tuning set (5 cases with at least one wrong field)
 

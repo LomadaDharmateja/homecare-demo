@@ -1,5 +1,9 @@
 # EXPLAINER: HOMECARE intake demo
 
+> **New to the project?** Start with the plain-language walkthrough in [`docs/walkthrough.html`](docs/walkthrough.html)
+> (open it in a browser). It follows four real requests through the system step by step. This document is the
+> technical reference.
+
 ## 1. Purpose
 
 A home-help service for elderly people gets customer requests by web form and email. Today staff read
@@ -107,8 +111,9 @@ n8n schedule 08:00 ──► FastAPI /overdue ──► IF count > 0 ──► o
   - `draft_followup`: LLM writes a short reply in the customer's language, told never to confirm a booking or
     promise a time or price. If the model drops the sign-off, code adds it.
 - **Guardrails:** extraction is always forced first. If extraction fails, the record gets priority 1 and
-  "needs manual triage", so it is never silently sorted to the bottom. If the model finishes without the two
-  rule-based tools, they run anyway. Every override is written to the audit log as `guardrail`.
+  "needs manual triage", so it is never silently sorted to the bottom. If the model finishes early, the two
+  rule-based tools and the reply draft run anyway, because every record needs triage and every customer
+  deserves a reply. Every override is written to the audit log as `guardrail`.
 - **Why the model cannot write SQL or send messages:** it only ever outputs JSON that matches a schema. Its
   only influence on the system is *which* whitelisted function runs next, plus the field values those
   functions validate. All SQL is fixed, parameterised code in `app/db.py` (column names are whitelisted
@@ -136,19 +141,20 @@ compared as a set. Current results from `eval/report.md` (qwen2.5:3b, temperatur
 
 | Field | Final test (20) | Held-out (30) | Tuning (50) |
 |---|---|---|---|
-| service_type | 100% | 100% | 92% |
+| service_type | 100% | 97% | 92% |
 | urgency | 95% | 100% | 100% |
 | callback_requested | 100% | 100% | 100% |
-| preferred_contact_time | 95% | 100% | 100% |
+| preferred_contact_time | 100% | 100% | 100% |
 | location | 100% | 100% | 100% |
-| missing_info | 100% | 100% | 96% |
-| **all six correct** | **90%** | 100% | 90% |
+| missing_info | 100% | 97% | 96% |
+| **all six correct** | **95%** (90% on the previous run) | 97% | 90% |
 | **high-urgency recall** | **6/6** | 9/9 | 15/15 |
 
-**Which number to quote: the final test, 90%.** The held-out 100% is inflated, because that set's failures
-guided the last round of rules. The final test set was written before that round and never used for tuning.
-It's still only 20 cases (one case = 5 points), and results move by a case or two between runs even at
-temperature 0 (GPU arithmetic is not perfectly deterministic).
+**Which number to quote: the final test, 90–95%.** Two runs with identical extraction code gave 90% and 95%,
+because one borderline German case ("abends") flips between runs even at temperature 0 (GPU arithmetic is not
+perfectly deterministic). The held-out numbers are inflated, because that set's failures guided the last
+round of rules. The final test set was written before that round and never used for tuning. It's still
+only 20 cases, so one case = 5 points.
 
 **How the score went from 54% to 90%** (all six fields correct, tuning set → final test):
 
@@ -221,6 +227,22 @@ check the result against the text did most of the work.
     Final result: **90% all correct, 6/6 high urgency**. Tuning stopped there.
 17. **Draft sign-off:** a live test showed a German draft without the sign-off (and with a promised time).
     The sign-off is now added in code. The time promise is left to the human reviewer and documented as a limitation.
+18. **Walkthrough with real examples** (`docs/walkthrough.html`): four new requests traced end to end through
+    n8n. Preparing it surfaced four more problems, all fixed:
+    - **Time-zone bug:** n8n sends times with a `+02:00` offset, but the overdue check compares times as
+      text against UTC. Every incoming time is now converted to UTC when stored.
+    - **Database file stayed locked:** Python's `with sqlite3.connect()` commits but never closes the connection.
+      `db.connect()` now closes it explicitly.
+    - **The agent skipped the reply:** for "What kind of help do you offer?" the model chose `finish`, with the
+      stated reason "followup_message_drafting_required", the opposite of its choice. Drafting is now enforced
+      by the guardrail, like the two rule-based steps. A consequence worth saying openly: with all four
+      steps enforced, the model mostly decides their *order*. For a process this simple a fixed pipeline would
+      do the same job. The agent pattern pays off once optional tools are added (look up an existing
+      customer, check helper availability), and the guardrails show how to keep such an agent safe.
+    - **Invented services in replies:** a draft offered "meal preparation". The drafting prompt now lists the four
+      real services. The sign-off check was also fooled by "HOMECARE" appearing elsewhere in the text, and now
+      looks for the actual sign-off.
+    The full eval was re-run afterwards: no regressions, 30/30 urgent cases caught.
 
 ## 9. How to run everything (PowerShell)
 
@@ -266,8 +288,8 @@ To open the workflows in the n8n editor, go to http://localhost:5678 and create 
 - **No cloud deployment**, and no real email inbox, CRM or messaging integration. "Approve" sends nothing.
 - **English and German only**, tested on **synthetic data only** (100 cases in three sets, labelled by the same
   author who tuned the prompts). Real customer messages will be messier, so expect lower accuracy than 90%.
-- **Small-model accuracy:** 90% of unseen test requests have all six fields right, so roughly 1 in 10 has an
-  error somewhere. German is weaker than English, and drafts are not evaluated at all. Human review of every
+- **Small-model accuracy:** 90–95% of unseen test requests have all six fields right, so roughly 1 in 10–20
+  has an error somewhere. German is weaker than English, and drafts are not evaluated at all. Human review of every
   reply is a requirement, not an option.
 - The grounding and time-phrase rules are keyword lists for English and German. A new language or unusual
   phrasing needs new entries, which is a maintenance cost.

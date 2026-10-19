@@ -13,8 +13,11 @@ A small, local demo of automating customer-request intake for an everyday-help s
 All data is synthetic and everything runs locally. See [EXPLAINER.md](EXPLAINER.md) for the full
 walkthrough and [intake-service/eval/report.md](intake-service/eval/report.md) for accuracy.
 
-**Accuracy** on a 20-case test set never used for tuning: **90% of requests fully correct** (all six fields),
-**6/6 urgent requests caught**. That's up from 54% at the first version: most of the gain came from letting
+**New here?** Open [`docs/walkthrough.html`](docs/walkthrough.html) in a browser: a plain-language tour that
+follows four real requests through the whole pipeline.
+
+**Accuracy** on a 20-case test set never used for tuning: **90–95% of requests fully correct** (all six fields;
+two runs), **6/6 urgent requests caught**. That's up from 54% at the first version: most of the gain came from letting
 code check the model's extracted facts against the customer's own words.
 
 ## Run it (PowerShell)
