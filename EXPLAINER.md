@@ -24,7 +24,8 @@ flowchart LR
     DB --> D[Streamlit dashboard<br/>dashboard.py<br/>human approves / rejects]
     API -->|record| W
     W --> IF{urgency = high?}
-    IF -->|yes| AL[alerts.log<br/>stand-in for Telegram]
+    IF -->|yes| TG[Telegram message<br/>no personal details]
+    IF -->|yes| AL[alerts.log<br/>local backup]
     W --> CSV[intake_log.csv]
     S[n8n Workflow B<br/>daily 08:00] -->|HTTP GET| OD[FastAPI /overdue]
     OD --> DB
@@ -209,8 +210,8 @@ check the result against the text did most of the work.
     for the high one, CSV line for both), and Workflow B via a manual trigger (summary file listed the overdue
     request). Added a "Run now (manual test)" trigger to B, because the CLI cannot start schedule-only workflows.
     Exported the final versions to `n8n/homecare_intake_workflow.json`.
-12. **Telegram:** not configured (no token, and the brief forbids external calls), so the alert is a clearly
-    named node that appends to `alerts.log`.
+12. **Telegram:** not configured at first (no token, and the brief forbids external calls), so the alert was a
+    clearly named node that appends to `alerts.log`. Telegram was added later (step 19).
 13. **Git:** initialised the repository and committed this version as the 54% baseline.
 14. **Honest measurement before more tuning:** wrote a 30-case held-out set with new cities and phrasing.
     Running the unchanged code on it gave 70% all correct, but **8/9 high-urgency**: one urgent case missed.
@@ -243,6 +244,12 @@ check the result against the text did most of the work.
       real services. The sign-off check was also fooled by "HOMECARE" appearing elsewhere in the text, and now
       looks for the actual sign-off.
     The full eval was re-run afterwards: no regressions, 30/30 urgent cases caught.
+19. **Telegram alerts (added on request).** This is the one deliberate exception to "nothing leaves the laptop",
+    so the message is kept minimal: case number, service, city and whether a callback was asked for. It contains no
+    names, no health details and none of the customer's own words, and points to the dashboard for the rest.
+    The bot token lives only in n8n's encrypted credential store, and the exported JSON has a chat-ID placeholder.
+    The node is set to "continue on error", so a Telegram outage never stops a request from being logged, and
+    `alerts.log` remains as a local backup. Tested with a real urgent request (#5, Neuss).
 
 ## 9. How to run everything (PowerShell)
 
@@ -294,7 +301,8 @@ To open the workflows in the n8n editor, go to http://localhost:5678 and create 
 - The grounding and time-phrase rules are keyword lists for English and German. A new language or unusual
   phrasing needs new entries, which is a maintenance cost.
 - Not built (out of scope): editing drafts in the dashboard, an audit-log view in the dashboard,
-  automatic retries, a held-out test set, Telegram alerts.
+  automatic retries. Telegram alerts were added later (step 19), but Telegram is a cloud service, so production
+  would need a data processing agreement or a self-hosted alternative.
 - **What production would need:** a GDPR data-protection review (lawful basis, a data processing agreement,
   retention and deletion, and health data is special-category data under Art. 9), an **EU AI Act** risk
   classification (urgency triage of elderly people's needs must be assessed carefully, with documented

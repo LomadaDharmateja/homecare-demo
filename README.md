@@ -7,10 +7,11 @@ A small, local demo of automating customer-request intake for an everyday-help s
   picks from four predefined tools to classify a request, check for missing information, set a priority and
   draft a follow-up. Everything goes to SQLite with a full audit log. A Streamlit dashboard lets a human
   approve or reject every drafted reply. Nothing is ever sent automatically.
-- **Project 2, `n8n/` (low-code):** two n8n workflows. **A** webhook → agent → alert if high urgency → CSV log.
-  **B** daily 08:00 check of overdue callbacks → summary file.
+- **Project 2, `n8n/` (low-code):** two n8n workflows. **A** webhook → agent → Telegram alert if high urgency
+  (plus a local `alerts.log` backup) → CSV log. **B** daily 08:00 check of overdue callbacks → summary file.
 
-All data is synthetic and everything runs locally. See [EXPLAINER.md](EXPLAINER.md) for the full
+All data is synthetic and everything runs locally, except the optional Telegram alert. That alert carries only
+the case number, service and city, with no names or health details. See [EXPLAINER.md](EXPLAINER.md) for the full
 walkthrough and [intake-service/eval/report.md](intake-service/eval/report.md) for accuracy.
 
 **New here?** Open [`docs/walkthrough.html`](docs/walkthrough.html) in a browser: a plain-language tour that
@@ -44,12 +45,21 @@ Invoke-RestMethod -Uri http://localhost:5678/webhook/homecare-intake -Method Pos
 ```
 
 Results: the record appears in the dashboard, `n8n\output\intake_log.csv` gets a line, and high-urgency
-requests also get a line in `n8n\output\alerts.log`. Evaluation: `.\.venv\Scripts\python.exe eval\run_eval.py`.
+requests also get a line in `n8n\output\alerts.log` and a Telegram message. Evaluation: `.\.venv\Scripts\python.exe eval\run_eval.py`.
+
+**Telegram (optional):**
+1. Create a bot with @BotFather and send it one message.
+2. In n8n, add a "Telegram API" credential named `HOMECARE Telegram bot` holding the token.
+3. In the node "ALERT: Telegram message", replace `YOUR_TELEGRAM_CHAT_ID` with your chat ID (from
+   `https://api.telegram.org/bot<TOKEN>/getUpdates`).
+
+If Telegram isn't set up, that node fails quietly and the rest of the workflow still runs.
 
 ## Limitations
 
-- Demo only: no authentication, no cloud deployment, no real CRM, email or Telegram integration.
-  Approving a draft changes its status; it does not send anything.
+- Demo only: no authentication, no cloud deployment, no real CRM or email integration.
+  Approving a draft changes its status; it does not send anything to the customer.
+- Telegram is a cloud service. Production would need a data processing agreement, or a self-hosted channel.
 - Synthetic data only (100 hand-written requests in three sets, English and German). Real messages will be
   messier, so expect lower accuracy than on the test set.
 - The 3B model still makes mistakes, more often in German. Drafted replies sometimes imply a booking or a
