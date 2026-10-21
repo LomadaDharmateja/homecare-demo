@@ -21,6 +21,17 @@ follows four real requests through the whole pipeline.
 two runs), **6/6 urgent requests caught**. That's up from 54% at the first version: most of the gain came from letting
 code check the model's extracted facts against the customer's own words.
 
+## Demo day (after the one-time setup below)
+
+```powershell
+cd homecare-demo
+powershell -ExecutionPolicy Bypass -File .\start_demo.ps1      # starts Docker+n8n, Ollama, API, dashboard
+powershell -ExecutionPolicy Bypass -File .\send_example.ps1 urgent   # also: missing | german | vague | "own text"
+```
+
+`start_demo.ps1` checks each service, starts only what isn't running, warms up the model and opens the
+dashboard and n8n. Close the two "HOMECARE" PowerShell windows to stop the API and the dashboard.
+
 ## Run it (PowerShell)
 
 One-time setup (from the cloned `homecare-demo` folder): `cd intake-service; python -m venv .venv; .\.venv\Scripts\pip install -r requirements.txt; ollama pull qwen2.5:3b`
