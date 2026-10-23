@@ -1,0 +1,42 @@
+{
+  "_note": "Expected query forms. Only the listed fields are scored. 'tuning' may be used while improving prompts and rules; 'final_test' was written at the same time and is only run, never tuned on.",
+  "tuning": [
+    {"q": "What was our total revenue last month?", "expect": {"metric": "revenue", "group_by": "none", "period": "last_month", "growth": false}},
+    {"q": "Which 5 locations have the most customers?", "expect": {"metric": "customers", "group_by": "location", "sort": "desc", "limit": 5, "growth": false}},
+    {"q": "Which locations lost the most customers in the last 6 months?", "expect": {"metric": "customers", "group_by": "location", "period": "last_6_months", "growth": true, "sort": "asc"}},
+    {"q": "Do partners who founded with a friend open a second location faster?", "expect": {"metric": "months_to_second_location", "group_by": "founder_type", "founder_type": null}},
+    {"q": "How did total revenue develop over the last 12 months?", "expect": {"metric": "revenue", "group_by": "month", "period": "last_12_months"}},
+    {"q": "Which 3 locations have the least cash?", "expect": {"metric": "cash", "group_by": "location", "sort": "asc", "limit": 3}},
+    {"q": "Wie hoch war der Umsatz in Bayern im letzten Monat?", "expect": {"metric": "revenue", "group_by": "none", "state": "Bayern", "period": "last_month"}},
+    {"q": "Profit by state over the last 3 months", "expect": {"metric": "profit", "group_by": "state", "period": "last_3_months", "growth": false}},
+    {"q": "How many locations do we have in NRW?", "expect": {"metric": "locations", "state": "NRW", "group_by": "none"}},
+    {"q": "Which locations are furthest below their business plan?", "expect": {"metric": "revenue_vs_plan", "group_by": "location", "sort": "asc"}},
+    {"q": "What is the conversion rate from enquiries to new customers by state?", "expect": {"metric": "conversion_rate", "group_by": "state"}},
+    {"q": "How many staff does Essen have?", "expect": {"metric": "staff", "location": "Essen", "group_by": "none"}},
+    {"q": "Which share of partners has opened a second location, by founder type?", "expect": {"metric": "share_with_second_location", "group_by": "founder_type"}},
+    {"q": "How has the number of enquiries changed over the last 3 months compared to before?", "expect": {"metric": "enquiries", "period": "last_3_months", "growth": true, "group_by": "none"}},
+    {"q": "Top 10 locations by hours delivered in the last 12 months", "expect": {"metric": "hours", "group_by": "location", "period": "last_12_months", "limit": 10, "sort": "desc"}},
+    {"q": "Wie hat sich der Gewinn in Oberhausen in den letzten 3 Monaten verändert?", "expect": {"metric": "profit", "location": "Oberhausen", "period": "last_3_months", "growth": true}},
+    {"q": "Revenue by opening year", "expect": {"metric": "revenue", "group_by": "opening_year", "growth": false}},
+    {"q": "Which state grew revenue the most over the last 6 months?", "expect": {"metric": "revenue", "group_by": "state", "period": "last_6_months", "growth": true, "sort": "desc"}},
+    {"q": "How many new customers did we win last month?", "expect": {"metric": "new_customers", "group_by": "none", "period": "last_month", "growth": false}},
+    {"q": "Show the trend of customers in Sachsen", "expect": {"metric": "customers", "group_by": "month", "state": "Sachsen"}}
+  ],
+  "final_test": [
+    {"q": "Which 4 locations made the highest profit last month?", "expect": {"metric": "profit", "group_by": "location", "sort": "desc", "limit": 4, "growth": false}},
+    {"q": "Welche Standorte haben am wenigsten Liquidität?", "expect": {"metric": "cash", "group_by": "location", "sort": "asc"}},
+    {"q": "Are friend-founded partners more likely to open a second site?", "expect": {"metric": "share_with_second_location", "group_by": "founder_type", "founder_type": null}},
+    {"q": "How did costs develop over the last 6 months?", "expect": {"metric": "costs", "group_by": "month", "period": "last_6_months"}},
+    {"q": "What's the revenue versus plan for Bavaria?", "expect": {"metric": "revenue_vs_plan", "state": "Bayern", "group_by": "none"}},
+    {"q": "Customers per state last month", "expect": {"metric": "customers", "group_by": "state", "period": "last_month", "growth": false}},
+    {"q": "Which locations had the biggest drop in revenue over the last 3 months?", "expect": {"metric": "revenue", "group_by": "location", "period": "last_3_months", "growth": true, "sort": "asc"}},
+    {"q": "How much cash does Krefeld have?", "expect": {"metric": "cash", "location": "Krefeld", "group_by": "none"}},
+    {"q": "Wie viele Anfragen hatten wir in den letzten 12 Monaten?", "expect": {"metric": "enquiries", "period": "last_12_months", "group_by": "none", "growth": false}},
+    {"q": "Conversion rate by founder type", "expect": {"metric": "conversion_rate", "group_by": "founder_type", "founder_type": null}},
+    {"q": "Show monthly profit for the whole network over the last year", "expect": {"metric": "profit", "group_by": "month", "period": "last_12_months"}},
+    {"q": "Which 5 locations gained the most customers in the last 6 months?", "expect": {"metric": "customers", "group_by": "location", "period": "last_6_months", "growth": true, "sort": "desc", "limit": 5}},
+    {"q": "How many locations opened per year?", "expect": {"metric": "locations", "group_by": "opening_year"}},
+    {"q": "Average months until a second location, all partners", "expect": {"metric": "months_to_second_location", "group_by": "none"}},
+    {"q": "Staff numbers by state", "expect": {"metric": "staff", "group_by": "state"}}
+  ]
+}

@@ -1,2 +1,6 @@
 # Runtime output of the n8n workflows (regenerated on every run)
 n8n/output/
+
+# Personal files: never publish
+*.pdf
+*.docx

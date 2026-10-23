@@ -1,0 +1,168 @@
+[
+  {
+    "id": "HomecareReportC",
+    "name": "HOMECARE C - Weekly partner report (analytics -> Telegram + file)",
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "cronExpression",
+                "expression": "0 8 * * 1"
+              }
+            ]
+          }
+        },
+        "id": "c1000000-0000-4000-8000-000000000001",
+        "name": "Every Monday 08:00",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          0,
+          200
+        ]
+      },
+      {
+        "parameters": {},
+        "id": "c1000000-0000-4000-8000-000000000002",
+        "name": "Run now (manual test)",
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          0,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "url": "http://host.docker.internal:8001/report/weekly",
+          "options": {
+            "timeout": 120000
+          }
+        },
+        "id": "c1000000-0000-4000-8000-000000000003",
+        "name": "Get weekly report (analytics API)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          240,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "chatId": "YOUR_TELEGRAM_CHAT_ID",
+          "text": "=📊 Weekly partner report {{ $json.month }}\n\n{{ $json.summary }}\n\nTop alerts:\n{{ $json.alerts.slice(0, 3).map(a => '• ' + a.text).join('\\n') }}\n\nFull report in the dashboard. (Fictional demo data)",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "id": "c1000000-0000-4000-8000-000000000004",
+        "name": "Telegram: summary + top alerts",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          500,
+          200
+        ],
+        "webhookId": "9e3f1a20-4b5c-4d6e-8f70-1a2b3c4d5e6f",
+        "credentials": {
+          "telegramApi": {
+            "id": "YOUR_CREDENTIAL_ID",
+            "name": "HOMECARE Telegram bot"
+          }
+        },
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "operation": "toText",
+          "sourceProperty": "markdown",
+          "options": {
+            "fileName": "={{ 'weekly_report_' + $json.month + '.md' }}"
+          }
+        },
+        "id": "c1000000-0000-4000-8000-000000000005",
+        "name": "Report to file",
+        "type": "n8n-nodes-base.convertToFile",
+        "typeVersion": 1.1,
+        "position": [
+          500,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "write",
+          "fileName": "={{ '/files/weekly_report_' + $('Get weekly report (analytics API)').item.json.month + '.md' }}"
+        },
+        "id": "c1000000-0000-4000-8000-000000000006",
+        "name": "Save weekly_report_<month>.md",
+        "type": "n8n-nodes-base.readWriteFile",
+        "typeVersion": 1,
+        "position": [
+          740,
+          400
+        ]
+      }
+    ],
+    "connections": {
+      "Every Monday 08:00": {
+        "main": [
+          [
+            {
+              "node": "Get weekly report (analytics API)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Run now (manual test)": {
+        "main": [
+          [
+            {
+              "node": "Get weekly report (analytics API)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get weekly report (analytics API)": {
+        "main": [
+          [
+            {
+              "node": "Telegram: summary + top alerts",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Report to file",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Report to file": {
+        "main": [
+          [
+            {
+              "node": "Save weekly_report_<month>.md",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "active": false,
+    "settings": {
+      "executionOrder": "v1",
+      "timezone": "Europe/Berlin"
+    },
+    "pinData": {}
+  }
+]

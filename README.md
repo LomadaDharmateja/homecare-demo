@@ -10,6 +10,10 @@ A small, local demo of automating customer-request intake for an everyday-help s
 - **Project 2, `n8n/` (low-code):** two n8n workflows. **A** webhook → agent → Telegram alert if high urgency
   (plus a local `alerts.log` backup) → CSV log. **B** daily 08:00 check of overdue callbacks → summary file.
 
+- **Project 3, `partner-analytics/`:** an assistant for head office. Ask questions about the franchise network
+  ("Do friend-founded partners open a second location faster?") and get answer, chart and calculation trail.
+  Plus a Monday report with early-warning alerts via n8n and Telegram. See [its README](partner-analytics/README.md).
+
 All data is synthetic and everything runs locally, except the optional Telegram alert. That alert carries only
 the case number, service and city, with no names or health details. See [EXPLAINER.md](EXPLAINER.md) for the full
 walkthrough and [intake-service/eval/report.md](intake-service/eval/report.md) for accuracy.
