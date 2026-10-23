@@ -15,9 +15,10 @@ A small, local demo of automating customer-request intake for an everyday-help s
   ("Do friend-founded partners open a second location faster?") and get answer, chart and calculation trail.
   Plus a Monday report with early-warning alerts via n8n and Telegram. See [its README](partner-analytics/README.md).
 
-- **Project 4, `partner-handbook/`:** a German-first assistant that answers partners' questions only from the
-  (fictional) partner handbook, with sources; says so when the handbook has no answer and collects those
-  questions as knowledge gaps for head office. See [its README](partner-handbook/README.md).
+- **Project 4, `partner-handbook/`:** a German-first assistant (English questions work too) that answers
+  partners' questions only from the (fictional) partner handbook, with sources; says so when the handbook has
+  no answer and collects those questions as knowledge gaps for head office. n8n workflow **D** offers it as a
+  chat inside n8n. See [its README](partner-handbook/README.md).
 
 All data is synthetic and everything runs locally, except the optional Telegram alert. That alert carries only
 the case number, service and city, with no names or health details. See [EXPLAINER.md](EXPLAINER.md) for the full
@@ -47,7 +48,7 @@ Close a "HOMECARE …" window to stop that part.
 | 1 Intake dashboard (Anfragen, Freigabe) | http://localhost:8501 |
 | 3 Partner analytics (Frage an die Daten, Wochenbericht) | http://localhost:8502 |
 | 4 Partner handbook assistant | http://localhost:8503 |
-| n8n (workflows A, B, C) | http://localhost:5678 |
+| n8n (workflows A, B, C, D) | http://localhost:5678 |
 | APIs (docs pages) | :8000/docs, :8001/docs, :8002/docs |
 
 ## Run it (PowerShell)

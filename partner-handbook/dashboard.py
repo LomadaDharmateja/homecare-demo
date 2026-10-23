@@ -19,6 +19,7 @@ BEISPIELE = [
     "Eine Anfrage kommt aus dem Gebiet eines anderen Partners. Was tun?",
     "Welche Software empfiehlt die Zentrale für die Buchhaltung?",
     "Meine Kundin ist gestürzt und atmet schwer!",
+    "Is a helper allowed to accept a gift from a customer?",
 ]
 STATUS = {"answered": "✅ Antwort aus dem Handbuch", "excerpt_shown": "📄 Originaltext aus dem Handbuch "
           "(die KI-Antwort hat die Prüfung nicht bestanden)", "not_found": "❔ Nicht im Handbuch",
@@ -53,6 +54,8 @@ with ask_tab:
             assistant.feedback(r["id"], False)
             st.toast("Notiert: erscheint unter Wissenslücken.")
         with st.expander("Wie die Antwort entstanden ist"):
+            if r.get("searched_as") and r["searched_as"] != r["question"]:
+                st.write(f"**Englische Frage, auf Deutsch gesucht als:** {r['searched_as']}")
             st.write("**Gefundene Abschnitte** (Suche nach Bedeutung + exakten Wörtern):")
             for h in r["retrieved"]:
                 st.write(f"- {h['section']} (Ähnlichkeit {h['cosine']}, Wort-Treffer {h['bm25']})")

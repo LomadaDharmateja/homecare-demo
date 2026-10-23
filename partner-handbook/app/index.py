@@ -85,10 +85,13 @@ class Index:
 
     def _bm25(self, query_tokens, i, k1=1.5, b=0.75):
         tf = Counter(self.doc_tokens[i])
-        # German compounds: "versicherung" should also hit "betriebshaftpflichtversicherung".
+        # German compounds, both ways: "versicherung" should hit "betriebshaftpflichtversicherung",
+        # and a question about "zielauslastung" should hit "auslastung".
         for qt in query_tokens:
             if len(qt) >= 5 and qt not in tf:
                 inside = sum(c for t, c in tf.items() if qt in t)
+                if not inside:
+                    inside = sum(c for t, c in tf.items() if len(t) >= 6 and t in qt)
                 if inside:
                     tf[qt] = inside
         length = len(self.doc_tokens[i])

@@ -1,0 +1,105 @@
+{
+  "id": "HomecareHandbookD",
+  "name": "HOMECARE D - Ask the partner handbook (chat -> local API)",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "mode": "webhook",
+        "authentication": "none",
+        "options": {
+          "responseMode": "lastNode"
+        }
+      },
+      "id": "d1000000-0000-4000-8000-000000000001",
+      "name": "Chat: Frage eines Partners",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "d1000000-0000-4000-8000-0000000000aa"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8002/frage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "frage",
+              "value": "={{ $json.chatInput }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "d1000000-0000-4000-8000-000000000002",
+      "name": "Handbuch-API fragen (lokal)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        300
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d1-output",
+              "name": "output",
+              "value": "={{ $json.answer ? $json.answer + '\\n\\n' + ($json.sources || []).map(function (s) { return 'Quelle: ' + s.doc + ' > ' + s.section + ' (verantwortlich: ' + s.owner + ', Stand ' + s.date + ')'; }).join('\\n') : 'Der Handbuch-Assistent ist gerade nicht erreichbar. Bitte später noch einmal versuchen.' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d1000000-0000-4000-8000-000000000003",
+      "name": "Antwort + Quellen für den Chat",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        520,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Chat: Frage eines Partners": {
+      "main": [
+        [
+          {
+            "node": "Handbuch-API fragen (lokal)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handbuch-API fragen (lokal)": {
+      "main": [
+        [
+          {
+            "node": "Antwort + Quellen für den Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": []
+}

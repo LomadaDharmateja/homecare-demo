@@ -43,7 +43,7 @@ def main():
     lines = ["# Partner handbook assistant: evaluation", "",
              "Local models: qwen2.5:3b (answers) and granite-embedding:278m (search). "
              "Questions were written before the assistant was built.", ""]
-    for name in (["tuning", "final_test"] if which == "all" else [which]):
+    for name in (["tuning", "final_test", "english_tuning", "english_test"] if which == "all" else [which]):
         rows = []
         for case in data[name]:
             t = time.time()

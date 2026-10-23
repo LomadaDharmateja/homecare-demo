@@ -45,8 +45,8 @@ Regeln:
 - Nutze nur Informationen aus den Auszügen. Nenne Zahlen, Fristen und Beträge genau so wie im Auszug.
 - Nennt der Auszug Ausnahmen oder Grenzen (z. B. "bis zu 10 Euro"), gehören sie in die Antwort.
 - Gib in "sources" die Nummern der Auszüge an, auf denen die Antwort beruht.
-- Wenn ein Auszug die Frage beantwortet, auch sinngemäß (z. B. "verboten" beantwortet "Dürfen wir ...?"),
-  setze found=true.
+- Wenn ein Auszug die Frage beantwortet, auch sinngemäß (ein Verbot im Auszug beantwortet zum Beispiel die
+  Frage "Dürfen wir ...?"), setze found=true.
 - Steht die Antwort wirklich nicht in den Auszügen, setze found=false und answer="". Rate niemals.
 - Keine medizinischen oder rechtlichen Einschätzungen über das Handbuch hinaus."""
 
@@ -71,7 +71,8 @@ NOT_FOUND = {
 def _lang(text):
     german = len(re.findall(r"\b(der|die|das|und|ich|wie|was|wann|muss|darf|kann|ist|ein|eine|nicht|bis|"
                             r"mein|meine|wir|soll)\b|[äöüß]", text, re.I))
-    english = len(re.findall(r"\b(the|and|what|how|when|is|are|do|does|can|should|my|our|much|many)\b", text, re.I))
+    english = len(re.findall(r"\b(the|and|what|how|when|is|are|do|does|can|should|my|our|much|many|i|a|from|for|"
+                             r"to|of|may|we|you|have|has|which|who|with|it|be|get|need)\b", text, re.I))
     return "en" if english > german else "de"
 
 
@@ -134,10 +135,44 @@ def _cite(s):
             "text": s["text"]}
 
 
+class Translation(BaseModel):
+    deutsch: str
+
+
+# Handbook terms. In production head office would maintain this list (a translation step alone gave
+# "Zieldurchnutzung" for "utilisation" and "Reisegeld" for "mileage allowance").
+GLOSSARY = {
+    "customer / client": "Kunde", "helper / carer": "Alltagshelfer", "head office": "Zentrale",
+    "care insurance (fund)": "Pflegekasse", "relief amount / allowance": "Entlastungsbetrag",
+    "schedule / rota": "Einsatzplan", "training": "Schulung", "complaint": "Beschwerde", "gift / present": "Geschenk",
+    "utilisation / utilization": "Auslastung", "mileage allowance": "Kilometergeld", "franchise fee": "Franchisegebühr",
+    "cash / liquidity": "Liquidität", "invoice": "Rechnung", "service record": "Leistungsnachweis",
+    "key (to a flat)": "Schlüssel", "sick note / sick leave": "Krankmeldung", "territory / area": "Gebiet",
+}
+TRANSLATE = ("Übersetze die Frage ins Deutsche, so wie ein Mitarbeiter in einem deutschen Franchise für Alltagshilfe "
+             "sie stellen würde. Verwende diese Fachbegriffe:\n"
+             + "\n".join(f"- {en} = {de}" for en, de in GLOSSARY.items())
+             + "\nNur die Übersetzung, keine Antwort.")
+
+
+def _to_german(question):
+    """The handbook is German; an English question is searched in German (the answer stays English)."""
+    try:
+        raw = ollama.chat(model=MODEL, format=Translation.model_json_schema(), options={"temperature": 0, "num_predict": 80},
+                          messages=[{"role": "system", "content": TRANSLATE}, {"role": "user", "content": question}])
+        return Translation.model_validate_json(raw["message"]["content"]).deutsch.strip() or question
+    except (httpx.ConnectError, ConnectionError) as e:
+        raise RuntimeError("Ollama is not running. Start it with: ollama serve") from e
+    except ValidationError:
+        return question
+
+
 def ask(question):
     lang = _lang(question)
-    hits = index().search(question, k=5)
-    emergency = bool(EMERGENCY.search(question))
+    searched_as = _to_german(question) if lang == "en" else question
+    # Tried: searching with translation + original and merging the rankings. It added noise (7/10 vs 8/10).
+    hits = index().search(searched_as, k=5)
+    emergency = bool(EMERGENCY.search(question) or EMERGENCY.search(searched_as))
     if emergency:  # make sure the emergency rules are among the excerpts
         notfall = [s for s in index().sections if s["file"] == "04_notfaelle.md" and s["section"] == "Grundregel"]
         hits = notfall + [h for h in hits if h["id"] != notfall[0]["id"]][:3]
@@ -162,6 +197,9 @@ def ask(question):
             unknown = _numbers(result.answer) - set().union(*(_numbers(c["text"] + " " + c["section"]) for c in cited))
             if unknown:
                 check = f"numbers not in the cited sections: {sorted(unknown)}"
+            elif len(result.answer.split()) < 4:
+                # "verboten" alone drops the exceptions ("bis 10 Euro"); show the section instead.
+                check = "answer too short to be complete"
 
     if emergency:
         status = "emergency"
@@ -180,7 +218,8 @@ def ask(question):
         status, answer = "answered", result.answer.strip()
 
     question_id = _log(question, status, [f"{c['file']}#{c['section']}" for c in cited])
-    return {"id": question_id, "question": question, "answer": answer, "status": status, "check": check,
+    return {"id": question_id, "question": question, "searched_as": searched_as, "answer": answer, "status": status,
+            "check": check,
             "sources": [_cite(c) for c in cited],
             "retrieved": [{"section": f"{h['doc']} – {h['section']}", "cosine": h.get("cosine"), "bm25": h.get("bm25")}
                           for h in hits]}
