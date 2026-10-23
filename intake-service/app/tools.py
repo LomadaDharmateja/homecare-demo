@@ -154,10 +154,60 @@ def ground_in_text(fields: dict, text: str) -> dict:
     return corrections
 
 
+SUMMARY_LABEL = {"shopping": "Einkauf", "transport": "Fahrdienst", "companionship": "Begleitung",
+                 "household": "Haushaltshilfe", "other": "Allgemeine Anfrage"}
+# Who the help is for: relation words only, never names.
+PERSON = [(r"mutter|mama|mum|mom|mother", "Mutter"), (r"vater|papa|dad|father", "Vater"),
+          (r"oma|großmutter|grandmother|grandma|nan|nana", "Oma"), (r"opa|großvater|grandfather|grandad|grandpa", "Opa"),
+          (r"eltern|parents", "Eltern"), (r"tante|aunt", "Tante"), (r"onkel|uncle", "Onkel"),
+          (r"frau|ehefrau|wife", "Ehefrau"), (r"mann|ehemann|husband", "Ehemann")]
+HEALTH_DE = {"fell": "gestürzt", "fallen": "gestürzt", "sturz": "gestürzt", "breath": "Atemnot", "unconscious": "bewusstlos",
+             "pain": "Schmerzen", "bleed": "Blutung", "blut": "Blutung", "weak": "schwach", "confused": "verwirrt",
+             "diarr": "Durchfall", "fever": "Fieber", "ill": "krank", "sick": "krank", "helpless": "hilflos",
+             "can't get up": "kommt nicht hoch", "schmerz": "Schmerzen", "atmet": "Atemnot"}
+PRICE = re.compile(r"\b(kost\w*|preis\w*|price\w*|cost\w*|how much)\b", re.I)
+DAYTIME_DE = {"morning": "vormittags", "afternoon": "nachmittags", "evening": "abends"}
+
+
+def _code_summary(fields: dict, text: str) -> str:
+    """One German line built from the checked fields. The 3B model's own summaries were often garbled German
+    ("Rüstkörchen und Elektroläser"), sometimes English, and twice contained the customer's full name."""
+    low = text.lower()
+    # "Frau"/"Mann" also mean Ms/man, so they need "meine"/"my" in front; the other words count on their own.
+    person = next((de for pattern, de in PERSON
+                   if re.search(r"\b(meine?[nmrs]?\s+|my\s+)" + ("" if de in ("Ehefrau", "Ehemann") else "?")
+                                + rf"({pattern})\b", low)), None)
+    line = SUMMARY_LABEL[fields["service_type"]] + (f" für {person}" if person else "")
+    line += f" in {fields['location']}" if fields["location"] else ""
+    line += f", „{fields['when_needed']}“" if fields.get("when_needed") else ""  # the customer's own words
+    line += "."
+    if fields["callback_requested"]:
+        when = DAYTIME_DE.get(fields["preferred_contact_time"])
+        line += f" Rückruf gewünscht{' (' + when + ')' if when else ''}."
+    signs = []
+    for m in HEALTH_RISK.finditer(text):
+        word = m.group(0).lower()
+        if word.startswith("blutdruck"):  # blood-pressure medicine is not bleeding
+            continue
+        de = next((v for k, v in HEALTH_DE.items() if word.startswith(k)), word)
+        if de not in signs:
+            signs.append(de)
+    if PRICE.search(text):
+        line += " Fragt nach dem Preis."
+    if signs:
+        line += " Hinweis im Text: " + ", ".join(signs) + "."
+    return line
+
+
 def extract_fields(state: dict) -> dict:
     raw = ask_llm(EXTRACTION_PROMPT, state["text"], ExtractedFields.model_schema_for_llm())
     fields = ExtractedFields.model_validate_json(raw).model_dump()
     corrections = ground_in_text(fields, state["text"])
+    # The summary is rebuilt by code; the model's sentence stays visible in the audit log as a correction.
+    code_summary = _code_summary(fields, state["text"])
+    if code_summary != fields["summary"]:
+        corrections["summary"] = [fields["summary"], code_summary]
+        fields["summary"] = code_summary
     state["fields"] = fields
     db.update_request(state["request_id"], **fields)
     # The audit log keeps both what the model said and what the grounding rules changed.

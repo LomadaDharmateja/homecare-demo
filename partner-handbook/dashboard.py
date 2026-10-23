@@ -1,4 +1,5 @@
 """Partnerhandbuch-Assistent. Start: python -m streamlit run dashboard.py --server.port 8503"""
+import re
 from collections import Counter
 
 import streamlit as st
@@ -68,12 +69,21 @@ with gaps_tab:
     if not gaps:
         st.info("Noch keine offenen Fragen.")
     else:
-        st.metric("Offene Fragen", len(gaps))
-        counts = Counter(g["question"].strip().lower() for g in gaps)
-        st.dataframe([{"Frage": g["question"], "Gestellt am": g["asked_at"][:16].replace("T", " "),
-                       "Grund": "nicht im Handbuch" if g["status"] == "not_found" else "als nicht hilfreich markiert",
-                       "Wie oft": counts[g["question"].strip().lower()]} for g in gaps],
-                     hide_index=True, use_container_width=True)
+        # One row per question: "für"/"fuer", case and punctuation don't make a new question.
+        def key(q):
+            return re.sub(r"\W+", " ", q.lower().replace("ü", "ue").replace("ä", "ae").replace("ö", "oe")
+                          .replace("ß", "ss")).strip()
+        counts = Counter(key(g["question"]) for g in gaps)
+        rows, seen = [], set()
+        for g in gaps:  # newest first, so the first one seen carries the latest date
+            if key(g["question"]) in seen:
+                continue
+            seen.add(key(g["question"]))
+            rows.append({"Frage": g["question"], "Zuletzt gestellt": g["asked_at"][:16].replace("T", " "),
+                         "Grund": "nicht im Handbuch" if g["status"] == "not_found" else "als nicht hilfreich markiert",
+                         "Wie oft": counts[key(g["question"])]})
+        st.metric("Offene Themen", len(rows))
+        st.dataframe(rows, hide_index=True, use_container_width=True)
 
 with book_tab:
     sections = assistant.index().sections

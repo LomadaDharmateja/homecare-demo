@@ -11,6 +11,13 @@ st.title("📊 HOMECARE Partner-Analyse")
 st.caption("Demo mit erfundenen Zahlen für 55 Standorte. Die KI füllt nur ein Abfrage-Formular aus; "
            "jede Zahl rechnet Python. Alles läuft lokal.")
 
+def de_number(v):
+    if v is None or v != v:
+        return "–"
+    s = f"{v:,.0f}" if float(v).is_integer() or abs(v) >= 1000 else f"{v:,.1f}"
+    return s.replace(",", "_").replace(".", ",").replace("_", ".")
+
+
 ask_tab, report_tab = st.tabs(["Frage an die Daten", "Wochenbericht & Hinweise"])
 
 BEISPIELE = [
@@ -48,6 +55,10 @@ with ask_tab:
                 else:
                     st.bar_chart(chart)
             unit = UNITS.get(q["metric"], "").replace("months", "Monate")
+            # German number format in the table (31,8 and 1.234.567); the chart above uses the raw numbers.
+            for col in ("value", "previous", "difference", "change_pct"):
+                if col in table:
+                    table[col] = table[col].map(de_number)
             st.dataframe(table.rename(columns={"group": GROUP_DE.get(q["group_by"], "Gruppe"),
                                                "value": f"Wert {unit}".strip(), "previous": "davor",
                                                "difference": "Differenz", "change_pct": "Veränderung %"}),

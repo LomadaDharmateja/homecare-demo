@@ -116,7 +116,8 @@ def _backstops(spec, question, notes):
     """Rules that catch the planner's common misses; each one is reported in the notes."""
     def fix(field, value, why):
         setattr(spec, field, value)
-        notes.append(f"Regel: {FIELD_DE[field]} = {value} ({why}).")
+        shown = "kein Filter" if value is None else value  # German screen: no Python "None"
+        notes.append(f"Regel: {FIELD_DE[field]} = {shown} ({why}).")
 
     # Names are found by matching the question against the real list, not left to the model.
     partners, _ = load()

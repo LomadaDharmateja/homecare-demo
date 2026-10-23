@@ -58,7 +58,8 @@ with open_tab:
     st.write(f"{len(open_records)} offene Anfragen")
 
 with approval_tab:
-    st.write("Jede Antwort ist ein KI-Entwurf. Ein Mensch prüft und gibt frei; erst dann würde sie verschickt.")
+    st.write("Jede Antwort ist ein Entwurf: Code schreibt ihn aus den geprüften Angaben, die KI hat nur die Anfrage gelesen. "
+             "Ein Mensch prüft und gibt frei; erst dann würde sie verschickt.")
     pending = [r for r in records if r["followup_status"] == "pending_approval"]
     pending.sort(key=lambda r: (URGENCY_RANK.get(r["urgency"], 3), r["received_at"]))
     if not pending:
