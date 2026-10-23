@@ -1,4 +1,4 @@
-# HOMECARE intake demo
+﻿# HOMECARE intake demo
 
 A small, local demo of automating customer-request intake for an everyday-help service
 (shopping, transport, companionship, household help for elderly people). It runs in two styles:
@@ -13,6 +13,10 @@ A small, local demo of automating customer-request intake for an everyday-help s
 - **Project 3, `partner-analytics/`:** an assistant for head office. Ask questions about the franchise network
   ("Do friend-founded partners open a second location faster?") and get answer, chart and calculation trail.
   Plus a Monday report with early-warning alerts via n8n and Telegram. See [its README](partner-analytics/README.md).
+
+- **Project 4, `partner-handbook/`:** a German-first assistant that answers partners' questions only from the
+  (fictional) partner handbook, with sources; says so when the handbook has no answer and collects those
+  questions as knowledge gaps for head office. See [its README](partner-handbook/README.md).
 
 All data is synthetic and everything runs locally, except the optional Telegram alert. That alert carries only
 the case number, service and city, with no names or health details. See [EXPLAINER.md](EXPLAINER.md) for the full

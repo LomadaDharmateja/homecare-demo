@@ -1,0 +1,39 @@
+{
+  "_note": "Written before the assistant was built. 'source' = handbook file that must be among the cited sources. 'must' = all of these must appear in the answer (case-insensitive; 'a|b' accepts either form, added after the first run because '5 Tage' was rejected for not saying 'fünf'). 'refuse' = the handbook does not cover it, so the assistant must say so. 'emergency' = must point to 112 immediately. 'tuning' may be used while improving; 'final_test' is only run.",
+  "tuning": [
+    {"q": "Bis wann muss ich mit der Pflegekasse abrechnen?", "source": "03_abrechnung.md", "must": ["5. Werktag"]},
+    {"q": "Wie hoch ist der Entlastungsbetrag?", "source": "03_abrechnung.md", "must": ["131"]},
+    {"q": "Wann verfallen übertragene Beträge vom Entlastungsbetrag?", "source": "03_abrechnung.md", "must": ["30. Juni"]},
+    {"q": "Welche Deutschkenntnisse brauchen Alltagshelfer?", "source": "05_personal.md", "must": ["B2"]},
+    {"q": "Wie lange dauert die Startschulung für neue Partner?", "source": "01_onboarding.md", "must": ["fünf|5"]},
+    {"q": "Was mache ich, wenn ein Kunde nicht die Tür öffnet?", "source": "04_notfaelle.md", "must": ["anrufen", "110"]},
+    {"q": "Darf ich als Alltagshelfer ein Geschenk von einer Kundin annehmen?", "source": "07_qualitaet_beschwerden.md", "must": ["10 Euro"]},
+    {"q": "Dürfen wir WhatsApp mit Kunden nutzen?", "source": "08_datenschutz.md", "must": ["verboten"]},
+    {"q": "Wie hoch ist die Franchisegebühr?", "source": "09_kennzahlen_liquiditaet.md", "must": ["6 Prozent"]},
+    {"q": "Bis wann muss ein verpasster Anruf zurückgerufen werden?", "source": "02_kundenanfrage.md", "must": ["4 Stunden"]},
+    {"q": "Eine Anfrage kommt aus einem Gebiet eines anderen Partners. Was tun?", "source": "02_kundenanfrage.md", "must": ["24 Stunden"]},
+    {"q": "Wie viele Kunden sollte ich nach 90 Tagen haben?", "source": "01_onboarding.md", "must": ["10"]},
+    {"q": "Bis wann muss sich ein Alltagshelfer krankmelden?", "source": "06_einsatzplanung.md", "must": ["7 Uhr"]},
+    {"q": "How much cash should a partner keep in the bank account?", "source": "09_kennzahlen_liquiditaet.md", "must": ["zwei|two|2"]},
+    {"q": "Wie hoch ist das Gehalt der Geschäftsführung in der Zentrale?", "refuse": true},
+    {"q": "Ein Kunde ist gestürzt und atmet schwer. Was soll ich tun?", "emergency": true, "source": "04_notfaelle.md", "must": ["112"]},
+    {"q": "Welche Versicherung brauche ich als neuer Partner?", "source": "01_onboarding.md", "must": ["3 Millionen"]}
+  ],
+  "final_test": [
+    {"q": "Wie lange werden Leistungsnachweise aufbewahrt?", "source": "08_datenschutz.md", "must": ["10 Jahre|zehn Jahre"]},
+    {"q": "Was ist der Umwandlungsanspruch?", "source": "03_abrechnung.md", "must": ["40 Prozent"]},
+    {"q": "Wie viele Stunden umfasst die Basisschulung in NRW?", "source": "05_personal.md", "must": ["30"]},
+    {"q": "Bis wann können Kunden einen Einsatz kostenlos absagen?", "source": "06_einsatzplanung.md", "must": ["24 Stunden"]},
+    {"q": "Wie schnell muss ich auf eine Beschwerde reagieren?", "source": "07_qualitaet_beschwerden.md", "must": ["2 Werktage|zwei Werktage"]},
+    {"q": "Was muss ich bei einer Datenpanne tun?", "source": "08_datenschutz.md", "must": ["72 Stunden"]},
+    {"q": "Bieten wir Wundversorgung an?", "source": "02_kundenanfrage.md", "must": ["nicht"]},
+    {"q": "Wie viel Kilometergeld bekommen die Mitarbeiter?", "source": "05_personal.md", "must": ["0,30|0.30|30 Cent"]},
+    {"q": "Wann muss der Einsatzplan für die nächste Woche fertig sein?", "source": "06_einsatzplanung.md", "must": ["Donnerstag", "16 Uhr"]},
+    {"q": "Darf ich eigene Flyer gestalten?", "source": "10_marketing.md", "must": ["nicht"]},
+    {"q": "Bis wann melde ich meine monatlichen Kennzahlen?", "source": "09_kennzahlen_liquiditaet.md", "must": ["10."]},
+    {"q": "What is the target utilisation rate for staff?", "source": "09_kennzahlen_liquiditaet.md", "must": ["75"]},
+    {"q": "Welche Software empfiehlt die Zentrale für die Buchhaltung?", "refuse": true},
+    {"q": "Wie viel kostet ein Franchise-Standort in Österreich?", "refuse": true},
+    {"q": "Meine Kundin ist bewusstlos, was jetzt?", "emergency": true, "source": "04_notfaelle.md", "must": ["112"]}
+  ]
+}
