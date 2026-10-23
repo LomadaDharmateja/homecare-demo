@@ -1,0 +1,191 @@
+[
+  {
+    "id": "HomecareOnboardingE",
+    "name": "HOMECARE E - Onboarding (partner update -> approval queue; daily risks -> Telegram)",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "partner-update",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "e1000000-0000-4000-8000-000000000001",
+        "name": "Partner-Update (Webhook)",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          0,
+          100
+        ],
+        "webhookId": "e1000000-0000-4000-8000-0000000000aa"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://host.docker.internal:8003/updates",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ partner_id: Number($json.body.partner_id), nachricht: $json.body.nachricht, quelle: 'E-Mail (n8n)' }) }}",
+          "options": {
+            "timeout": 120000
+          }
+        },
+        "id": "e1000000-0000-4000-8000-000000000002",
+        "name": "Vorschlag erstellen (lokale API)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          240,
+          100
+        ]
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "id": "e1000000-0000-4000-8000-000000000003",
+        "name": "Antwort: Vorschlag wartet auf Freigabe",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          480,
+          100
+        ]
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "cronExpression",
+                "expression": "30 8 * * 1-5"
+              }
+            ]
+          }
+        },
+        "id": "e1000000-0000-4000-8000-000000000004",
+        "name": "Mo-Fr 08:30",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          0,
+          340
+        ]
+      },
+      {
+        "parameters": {},
+        "id": "e1000000-0000-4000-8000-000000000005",
+        "name": "Jetzt ausführen (Test)",
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          0,
+          520
+        ]
+      },
+      {
+        "parameters": {
+          "url": "http://host.docker.internal:8003/risiken",
+          "options": {}
+        },
+        "id": "e1000000-0000-4000-8000-000000000006",
+        "name": "Risiken holen (lokale API)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          240,
+          420
+        ]
+      },
+      {
+        "parameters": {
+          "chatId": "YOUR_TELEGRAM_CHAT_ID",
+          "text": "={{ $json.text }}",
+          "additionalFields": {
+            "appendAttribution": false
+          }
+        },
+        "id": "e1000000-0000-4000-8000-000000000007",
+        "name": "Telegram: Onboarding-Risiken",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          480,
+          420
+        ],
+        "webhookId": "e1000000-0000-4000-8000-0000000000bb",
+        "credentials": {
+          "telegramApi": {
+            "id": "YOUR_CREDENTIAL_ID",
+            "name": "HOMECARE Telegram bot"
+          }
+        },
+        "onError": "continueRegularOutput"
+      }
+    ],
+    "connections": {
+      "Partner-Update (Webhook)": {
+        "main": [
+          [
+            {
+              "node": "Vorschlag erstellen (lokale API)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Vorschlag erstellen (lokale API)": {
+        "main": [
+          [
+            {
+              "node": "Antwort: Vorschlag wartet auf Freigabe",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Mo-Fr 08:30": {
+        "main": [
+          [
+            {
+              "node": "Risiken holen (lokale API)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Jetzt ausführen (Test)": {
+        "main": [
+          [
+            {
+              "node": "Risiken holen (lokale API)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Risiken holen (lokale API)": {
+        "main": [
+          [
+            {
+              "node": "Telegram: Onboarding-Risiken",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "active": false,
+    "settings": {
+      "executionOrder": "v1",
+      "timezone": "Europe/Berlin"
+    },
+    "pinData": {}
+  }
+]

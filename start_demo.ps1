@@ -1,4 +1,4 @@
-# Start everything for the demo: Docker + n8n, Ollama, and the three Python projects (API + dashboard each).
+# Start everything for the demo: Docker + n8n, Ollama, and the four Python projects (API + dashboard each).
 # Run from PowerShell:   powershell -ExecutionPolicy Bypass -File .\start_demo.ps1
 # Safe to run twice: anything already running is left alone. Close a "HOMECARE ..." window to stop that part.
 
@@ -52,6 +52,8 @@ $ok += Start-App "3 Analytics API"        "partner-analytics" 8001 "$uv 8001" "/
 $ok += Start-App "3 Analytics dashboard"  "partner-analytics" 8502 "$st 8502" ""
 $ok += Start-App "4 Handbook API"         "partner-handbook"  8002 "$uv 8002" "/docs"
 $ok += Start-App "4 Handbook dashboard"   "partner-handbook"  8503 "$st 8503" ""
+$ok += Start-App "5 Onboarding API"       "partner-onboarding" 8003 "$uv 8003" "/docs"
+$ok += Start-App "5 Onboarding dashboard" "partner-onboarding" 8504 "$st 8504" ""
 
 # Load both models into memory now, so the first live question isn't slow.
 if ($okOllama) {
@@ -61,12 +63,12 @@ if ($okOllama) {
 }
 
 if ($ok -notcontains $false) {
-    Write-Host "`nAll running: dashboards on 8501, 8502, 8503; n8n on 5678." -ForegroundColor Green
+    Write-Host "`nAll running: dashboards on 8501, 8502, 8503, 8504; n8n on 5678." -ForegroundColor Green
 } else {
     Write-Host "`nSomething did not start; see FAIL/SKIP above." -ForegroundColor Red
 }
 if (-not $NoBrowser) {
-    foreach ($u in "http://localhost:8501", "http://localhost:8502", "http://localhost:8503", "http://localhost:5678") {
+    foreach ($u in "http://localhost:8501", "http://localhost:8502", "http://localhost:8503", "http://localhost:8504", "http://localhost:5678") {
         if (Test-Url $u) { Start-Process $u }
     }
 }

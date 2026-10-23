@@ -1,0 +1,308 @@
+{
+  "_note": "Written before the extractor was built. Each case: a partner's message and the checklist changes it really states. 'blockiert' only when the partner names an obstacle. Plans, questions and 'noch nicht' are no change. active_customers only when a current number is stated. Scored on the final, code-checked proposal.",
+  "tuning": [
+    {
+      "msg": "Hallo Frau Becker, kurzes Update: Die Betriebshaftpflicht ist seit gestern abgeschlossen, die Police kommt per Post. Viele Grüße",
+      "changes": {
+        "haftpflicht": "erledigt"
+      }
+    },
+    {
+      "msg": "Gewerbe ist angemeldet und das Geschäftskonto bei der Sparkasse ist auch eröffnet.",
+      "changes": {
+        "gewerbe": "erledigt",
+        "konto": "erledigt"
+      }
+    },
+    {
+      "msg": "Den Antrag auf Anerkennung haben wir noch nicht abgeschickt, uns fehlt noch ein Formular vom Gesundheitsamt.",
+      "changes": {
+        "antrag": "blockiert"
+      }
+    },
+    {
+      "msg": "Mit dem Büro klappt es leider nicht, der Vermieter hat kurzfristig abgesagt.",
+      "changes": {
+        "buero": "blockiert"
+      }
+    },
+    {
+      "msg": "Wir haben zwei Alltagshelferinnen eingestellt, beide fangen am Ersten an.",
+      "changes": {
+        "helfer": "erledigt"
+      }
+    },
+    {
+      "msg": "Die Startschulung machen wir im Dezember, der Termin im Oktober war schon voll.",
+      "changes": {}
+    },
+    {
+      "msg": "Seit Montag haben wir unseren ersten Kunden, er bekommt zweimal pro Woche Einkaufshilfe.",
+      "changes": {
+        "erster_kunde": "erledigt"
+      },
+      "active_customers": 1
+    },
+    {
+      "msg": "Wir betreuen jetzt 11 Kunden - das Ziel ist geschafft!",
+      "changes": {
+        "erster_kunde": "erledigt",
+        "zehn_kunden": "erledigt"
+      },
+      "active_customers": 11
+    },
+    {
+      "msg": "Hallo, wie lange dauert eigentlich die Bearbeitung des Antrags bei der Behörde? Danke!",
+      "changes": {}
+    },
+    {
+      "msg": "Der Bescheid ist da: Wir sind offiziell als Angebot zur Unterstützung im Alltag anerkannt!",
+      "changes": {
+        "antrag": "erledigt",
+        "zulassung": "erledigt"
+      }
+    },
+    {
+      "msg": "Flyer sind gedruckt und verteilt, die Anzeige im Wochenblatt erscheint am Samstag.",
+      "changes": {
+        "marketing": "erledigt"
+      }
+    },
+    {
+      "msg": "Die Führungszeugnisse für beide Helfer liegen vor, die Schulung haben sie auch hinter sich.",
+      "changes": {
+        "fuehrungszeugnis": "erledigt"
+      }
+    },
+    {
+      "msg": "Hi, quick update from Essen: we signed the office lease today, 32 m² near the station.",
+      "changes": {
+        "buero": "erledigt"
+      }
+    },
+    {
+      "msg": "Die Versicherung zickt noch rum, die wollen erst die Handelsregistereintragung sehen. Die Eintragung dauert beim Notar noch.",
+      "changes": {
+        "haftpflicht": "blockiert"
+      }
+    },
+    {
+      "msg": "Wir haben im Moment 6 Kunden, Tendenz steigend.",
+      "changes": {
+        "erster_kunde": "erledigt"
+      },
+      "active_customers": 6
+    }
+  ],
+  "final_test": [
+    {
+      "msg": "Guten Morgen! Die Haftpflichtversicherung haben wir abgeschlossen, Deckungssumme 3 Mio. Außerdem ist das Konto bei der Volksbank eingerichtet.",
+      "changes": {
+        "haftpflicht": "erledigt",
+        "konto": "erledigt"
+      }
+    },
+    {
+      "msg": "Das Büro ist angemietet, die Schlüsselübergabe war heute. Die Helfersuche läuft noch, bisher gab es keine passenden Bewerbungen.",
+      "changes": {
+        "buero": "erledigt",
+        "helfer": "blockiert"
+      }
+    },
+    {
+      "msg": "Ich habe den Login für die Partnersoftware immer noch nicht bekommen, können Sie da nachhaken?",
+      "changes": {
+        "software": "blockiert"
+      }
+    },
+    {
+      "msg": "Wir werden den Antrag nächste Woche einreichen.",
+      "changes": {}
+    },
+    {
+      "msg": "Antrag ist raus! Haben ihn gestern persönlich beim Amt abgegeben.",
+      "changes": {
+        "antrag": "erledigt"
+      }
+    },
+    {
+      "msg": "Die Startschulung in Düsseldorf war super, vielen Dank an das ganze Team!",
+      "changes": {
+        "schulung": "erledigt"
+      }
+    },
+    {
+      "msg": "Leider ist eine der beiden neuen Helferinnen wieder abgesprungen, wir suchen Ersatz.",
+      "changes": {
+        "helfer": "blockiert"
+      }
+    },
+    {
+      "msg": "Wir haben unseren ersten Einsatz für nächsten Dienstag geplant.",
+      "changes": {}
+    },
+    {
+      "msg": "Stand heute: 4 Kunden aktiv, 2 weitere im Erstgespräch.",
+      "changes": {
+        "erster_kunde": "erledigt"
+      },
+      "active_customers": 4
+    },
+    {
+      "msg": "Die Zulassung ist noch nicht da, die Behörde hat Unterlagen nachgefordert.",
+      "changes": {
+        "zulassung": "blockiert"
+      }
+    },
+    {
+      "msg": "Hello, the business registration is done and our bank account is open. Insurance is next on my list.",
+      "changes": {
+        "gewerbe": "erledigt",
+        "konto": "erledigt"
+      }
+    },
+    {
+      "msg": "Kurze Frage: Muss das Führungszeugnis erweitert sein oder reicht das normale?",
+      "changes": {}
+    },
+    {
+      "msg": "Das Abschlussgespräch können wir gern am 15. machen. Bis dahin haben wir hoffentlich 10 Kunden.",
+      "changes": {}
+    },
+    {
+      "msg": "Unsere Website ist online und die ersten Plakate hängen. Leider hat die Druckerei die Flyer falsch gedruckt.",
+      "changes": {
+        "marketing": "erledigt"
+      }
+    },
+    {
+      "msg": "Notartermin war heute, die GmbH ist gegründet und das Gewerbe angemeldet. Die Versicherung schließen wir nächste Woche ab.",
+      "changes": {
+        "gewerbe": "erledigt"
+      }
+    }
+  ],
+  "_note_test_2": "final_test_2 was written after final_test had been run once (11/15 blind) and before any fix made because of it, so it is the blind set for the fixed version.",
+  "final_test_2": [
+    {
+      "msg": "Unser Geschäftskonto ist seit letzter Woche aktiv.",
+      "changes": {
+        "konto": "erledigt"
+      }
+    },
+    {
+      "msg": "Die Police für die Betriebshaftpflicht ist heute gekommen.",
+      "changes": {
+        "haftpflicht": "erledigt"
+      }
+    },
+    {
+      "msg": "Wir warten immer noch auf die Vertragsvorlagen in der Software, ohne die können wir keine Verträge machen.",
+      "changes": {
+        "vorlagen": "blockiert"
+      }
+    },
+    {
+      "msg": "Die Anzeige in der Lokalzeitung ist erschienen und wir hatten schon drei Anrufe.",
+      "changes": {
+        "marketing": "erledigt"
+      }
+    },
+    {
+      "msg": "Bewerbungsgespräche laufen, nächste Woche stellen wir die zweite Helferin ein.",
+      "changes": {}
+    },
+    {
+      "msg": "Die Startschulung wurde leider abgesagt, weil zu wenige Teilnehmer angemeldet waren.",
+      "changes": {
+        "schulung": "blockiert"
+      }
+    },
+    {
+      "msg": "Unser Antrag liegt seit sechs Wochen beim Landesamt, wir haben noch nichts gehört.",
+      "changes": {}
+    },
+    {
+      "msg": "Wir haben 8 Kunden und zwei Alltagshelfer im Einsatz.",
+      "changes": {
+        "erster_kunde": "erledigt",
+        "helfer": "erledigt"
+      },
+      "active_customers": 8
+    },
+    {
+      "msg": "The office is ready. Our insurance broker cancelled, so we have no liability insurance yet.",
+      "changes": {
+        "buero": "erledigt",
+        "haftpflicht": "blockiert"
+      }
+    },
+    {
+      "msg": "Danke für das nette Telefonat gestern!",
+      "changes": {}
+    }
+  ],
+  "_note_test_3": "final_test_2 scored 6/10 blind with a prompt change that also hurt tuning. final_test_3 was written next, before the cue-rules version was built, and run once.",
+  "final_test_3": [
+    {
+      "msg": "Die Gewerbeanmeldung ist durch, das Konto bei der Commerzbank dauert noch ein paar Tage.",
+      "changes": {
+        "gewerbe": "erledigt"
+      }
+    },
+    {
+      "msg": "Leider hat die Versicherung unseren Antrag auf Haftpflicht abgelehnt.",
+      "changes": {
+        "haftpflicht": "blockiert"
+      }
+    },
+    {
+      "msg": "Wir sind seit heute offiziell zugelassen!",
+      "changes": {
+        "zulassung": "erledigt",
+        "antrag": "erledigt"
+      }
+    },
+    {
+      "msg": "Unsere erste Kundin betreuen wir seit Mittwoch.",
+      "changes": {
+        "erster_kunde": "erledigt"
+      },
+      "active_customers": 1
+    },
+    {
+      "msg": "Ich konnte an der Startschulung nicht teilnehmen, weil ich krank war.",
+      "changes": {
+        "schulung": "blockiert"
+      }
+    },
+    {
+      "msg": "Flyer kommen nächste Woche aus der Druckerei.",
+      "changes": {}
+    },
+    {
+      "msg": "We now look after 10 clients!",
+      "changes": {
+        "erster_kunde": "erledigt",
+        "zehn_kunden": "erledigt"
+      },
+      "active_customers": 10
+    },
+    {
+      "msg": "Der Mietvertrag fürs Büro ist unterschrieben, Einzug ist am Ersten.",
+      "changes": {
+        "buero": "erledigt"
+      }
+    },
+    {
+      "msg": "Haben Sie eine Vorlage für den Kundenvertrag?",
+      "changes": {}
+    },
+    {
+      "msg": "Beide Helferinnen haben ihr erweitertes Führungszeugnis abgegeben.",
+      "changes": {
+        "fuehrungszeugnis": "erledigt"
+      }
+    }
+  ]
+}

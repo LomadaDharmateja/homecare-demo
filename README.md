@@ -20,6 +20,13 @@ A small, local demo of automating customer-request intake for an everyday-help s
   no answer and collects those questions as knowledge gaps for head office. n8n workflow **D** offers it as a
   chat inside n8n. See [its README](partner-handbook/README.md).
 
+- **Project 5, `partner-onboarding/`:** an onboarding cockpit for the first 90 days of new partners, using the
+  handbook's checklist. Partner e-mails become **proposals** for checklist changes (rules first, the local model
+  only for unclear sentences), and a person approves them, with a full audit log. Code alone runs the traffic
+  light, for example "customer visits but no permit yet" or a permit forecast. n8n workflow **E** takes partner
+  e-mails by webhook and sends a daily risk digest to Telegram. Blind test 8/10, never a wrong "done".
+  See [its README](partner-onboarding/README.md).
+
 All data is synthetic and everything runs locally, except the optional Telegram alert. That alert carries only
 the case number, service and city, with no names or health details. See [EXPLAINER.md](EXPLAINER.md) for the full
 walkthrough and [intake-service/eval/report.md](intake-service/eval/report.md) for accuracy.
@@ -35,12 +42,12 @@ code check the model's extracted facts against the customer's own words.
 
 ```powershell
 cd homecare-demo
-powershell -ExecutionPolicy Bypass -File .\start_demo.ps1         # Docker+n8n, Ollama, all 3 APIs + 3 dashboards
+powershell -ExecutionPolicy Bypass -File .\start_demo.ps1         # Docker+n8n, Ollama, all 4 APIs + 4 dashboards
 powershell -ExecutionPolicy Bypass -File .\send_example.ps1 notfall  # also: fehlt | einkauf | unklar | urgent | "eigener Text"
 ```
 
 `start_demo.ps1` checks each service, starts only what isn't running (each in a minimized "HOMECARE …" window),
-warms up both models and opens the three dashboards and n8n. Add `-NoBrowser` to start without opening tabs.
+warms up both models and opens the four dashboards and n8n. Add `-NoBrowser` to start without opening tabs.
 Close a "HOMECARE …" window to stop that part.
 
 | What | Where |
@@ -48,8 +55,9 @@ Close a "HOMECARE …" window to stop that part.
 | 1 Intake dashboard (Anfragen, Freigabe) | http://localhost:8501 |
 | 3 Partner analytics (Frage an die Daten, Wochenbericht) | http://localhost:8502 |
 | 4 Partner handbook assistant | http://localhost:8503 |
-| n8n (workflows A, B, C, D) | http://localhost:5678 |
-| APIs (docs pages) | :8000/docs, :8001/docs, :8002/docs |
+| 5 Onboarding cockpit (Übersicht, Updates & Freigabe, Protokoll) | http://localhost:8504 |
+| n8n (workflows A, B, C, D, E) | http://localhost:5678 |
+| APIs (docs pages) | :8000/docs, :8001/docs, :8002/docs, :8003/docs |
 
 ## Run it (PowerShell)
 
