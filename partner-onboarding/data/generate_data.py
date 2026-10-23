@@ -31,9 +31,10 @@ PARTNERS = [
 
 
 def main():
-    if db.DB_PATH.exists():
-        db.DB_PATH.unlink()
     con = db.connect()
+    # Empty the tables instead of deleting the file: on Windows the running API/dashboard keep the file open.
+    for table in ("partners", "tasks", "proposals", "audit"):
+        con.execute(f"DELETE FROM {table}")
     today = date.today()
     for pid, (name, city, day, customers, special) in enumerate(PARTNERS, 1):
         start = today - timedelta(days=day - 1)

@@ -27,7 +27,8 @@ BEISPIELE = {
 partners = service.overview()
 by_id = {p["id"]: p for p in partners}
 pending = service.pending()
-tab1, tab2, tab3 = st.tabs(["Übersicht", f"Updates & Freigabe ({len(pending)})", "Protokoll"])
+# Fixed tab labels: a changing label (e.g. with a count) makes Streamlit jump back to the first tab.
+tab1, tab2, tab3 = st.tabs(["Übersicht", "Updates & Freigabe", "Protokoll"])
 
 with tab1:
     c1, c2, c3, c4 = st.columns(4)
