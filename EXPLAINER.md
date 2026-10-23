@@ -109,8 +109,11 @@ n8n schedule 08:00 ──► FastAPI /overdue ──► IF count > 0 ──► o
   - `set_priority`: **rules.** high = 1; medium = 2 with callback, else 3; low = 4 with callback, else 5.
     Safety floor: if the extracted time says today/tonight/heute/…, urgency is raised to high; a concrete day
     raises low to medium. Rules can only *raise* urgency, never lower it.
-  - `draft_followup`: LLM writes a short reply in the customer's language, told never to confirm a booking or
-    promise a time or price. If the model drops the sign-off, code adds it.
+  - `draft_followup`: **code writes the reply** from the checked fields, in the customer's language: it restates
+    the request (service, city, the customer's own time words), asks for what is missing, says a colleague will
+    call back if asked, adds "call 112" only when someone is hurt or ill, and promises nothing. An LLM-written
+    mode still exists (`DRAFT_MODE=model`), with a guard that falls back to the template when the model promises
+    something or tells the customer to call us. Step 20 explains why the template is the default.
 - **Guardrails:** extraction is always forced first. If extraction fails, the record gets priority 1 and
   "needs manual triage", so it is never silently sorted to the bottom. If the model finishes early, the two
   rule-based tools and the reply draft run anyway, because every record needs triage and every customer
@@ -171,13 +174,13 @@ was asked to judge something that a rule can check". Letting the model read the 
 check the result against the text did most of the work.
 
 **Known failures** (full list in the report):
-- **German is the weak spot.** Both final-test failures are German: "abends" (evenings) read as afternoon,
-  and "es eilt aber nicht" (no rush) still rated medium.
+- **German is the weak spot.** The remaining final-test failure is German: "es eilt aber nicht" (no rush) is
+  still rated medium. ("abends" read as afternoon was fixed in step 20, so that set is no longer fully blind.)
 - Some urgent medicine pick-ups are still labelled `transport` or `companionship` instead of `shopping`.
 - A request that is clearly *about* a service but says it is unsure what is needed ("#29") is not marked `other`.
-- **Draft replies are the weakest part.** They sometimes imply a booking ("scheduled for Friday"), promise a time
-  ("tomorrow evening") or contain typos. The eval does not measure drafts. This is exactly why every draft
-  needs human approval.
+- **Model-written drafts were the weakest part**: they implied bookings, told customers to call us, or had
+  unclear German. Since step 20 code writes the drafts; `eval/check_drafts.py` checks all 20 final-test drafts
+  (20/20 in the customer's language, 0/20 promising anything). Every draft still needs human approval.
 
 ## 8. What we did, step by step
 
@@ -251,6 +254,22 @@ check the result against the text did most of the work.
     The node is set to "continue on error", so a Telegram outage never stops a request from being logged, and
     `alerts.log` remains as a local backup. Tested with a real urgent request (#5, Neuss).
 
+20. **German pass (most real requests will be German).** The dashboard is now German (stored values stay English
+    for the code, API and n8n), the one-line summary is written in German for the office team, and
+    `send_example.ps1` has German examples. Three findings along the way:
+    - **"Bitte rufen Sie mich abends an" was read as afternoon.** A new check: if the sentence that asks for a
+      call names exactly one time of day, the customer's word wins ("Guten Morgen" and "morgen" = tomorrow are
+      not counted as morning). This fixed a final-test failure, so the final set is no longer fully blind:
+      18/20 → 19/20.
+    - **Drafts copied the customer's words back** ("Bitte rufen Sie mich nachmittags an" sent *to* the customer)
+      and still promised things ("Ab Dienstag werde ich für Ihre Oma einkaufen"). A guard caught those, but
+      reading all 13 remaining model drafts by hand, 7 still needed edits (unclear German, "would you like to
+      give me a call", the customer's perspective copied). For elderly customers that is not good enough, so
+      **code now writes the draft** from the checked fields, and the model does what it is good at: understanding
+      the request. A larger model could make free-text drafts worth it again; the guard is already there.
+    - **The language check was fooled by city names**: the ü in "Münster" made English requests look German.
+      It now only counts German words.
+
 ## 9. How to run everything (PowerShell)
 
 ```powershell
@@ -296,8 +315,8 @@ To open the workflows in the n8n editor, go to http://localhost:5678 and create 
 - **English and German only**, tested on **synthetic data only** (100 cases in three sets, labelled by the same
   author who tuned the prompts). Real customer messages will be messier, so expect lower accuracy than 90%.
 - **Small-model accuracy:** 90–95% of unseen test requests have all six fields right, so roughly 1 in 10–20
-  has an error somewhere. German is weaker than English, and drafts are not evaluated at all. Human review of every
-  reply is a requirement, not an option.
+  has an error somewhere. German is weaker than English. Drafts are checked by `eval/check_drafts.py`, but
+  template replies are plain by design. Human review of every reply is a requirement, not an option.
 - The grounding and time-phrase rules are keyword lists for English and German. A new language or unusual
   phrasing needs new entries, which is a maintenance cost.
 - Not built (out of scope): editing drafts in the dashboard, an audit-log view in the dashboard,

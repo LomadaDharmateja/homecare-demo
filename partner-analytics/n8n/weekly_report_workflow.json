@@ -53,7 +53,7 @@
       {
         "parameters": {
           "chatId": "YOUR_TELEGRAM_CHAT_ID",
-          "text": "=📊 Weekly partner report {{ $json.month }}\n\n{{ $json.summary }}\n\nTop alerts:\n{{ $json.alerts.slice(0, 3).map(a => '• ' + a.text).join('\\n') }}\n\nFull report in the dashboard. (Fictional demo data)",
+          "text": "=📊 Wochenbericht Partnernetz {{ $json.month }}\n\n{{ $json.summary }}\n\nWichtigste Hinweise:\n{{ $json.alerts.slice(0, 3).map(a => '• ' + a.text).join('\\n') }}\n\nGanzer Bericht im Dashboard. (Erfundene Demo-Daten)",
           "additionalFields": {
             "appendAttribution": false
           }

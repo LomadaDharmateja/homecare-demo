@@ -1,12 +1,13 @@
-﻿# HOMECARE intake demo
+# HOMECARE intake demo
 
 A small, local demo of automating customer-request intake for an everyday-help service
 (shopping, transport, companionship, household help for elderly people). It runs in two styles:
 
 - **Project 1, `intake-service/` (Python):** a FastAPI service where a local LLM agent (Ollama, `qwen2.5:3b`)
   picks from four predefined tools to classify a request, check for missing information, set a priority and
-  draft a follow-up. Everything goes to SQLite with a full audit log. A Streamlit dashboard lets a human
-  approve or reject every drafted reply. Nothing is ever sent automatically.
+  draft a follow-up (written by code from the checked fields, in the customer's language). Everything goes to
+  SQLite with a full audit log. A German Streamlit dashboard lets a human approve or reject every drafted reply.
+  Nothing is ever sent automatically.
 - **Project 2, `n8n/` (low-code):** two n8n workflows. **A** webhook → agent → Telegram alert if high urgency
   (plus a local `alerts.log` backup) → CSV log. **B** daily 08:00 check of overdue callbacks → summary file.
 
@@ -25,20 +26,29 @@ walkthrough and [intake-service/eval/report.md](intake-service/eval/report.md) f
 **New here?** Open [`docs/walkthrough.html`](docs/walkthrough.html) in a browser: a plain-language tour that
 follows four real requests through the whole pipeline.
 
-**Accuracy** on a 20-case test set never used for tuning: **90–95% of requests fully correct** (all six fields;
-two runs), **6/6 urgent requests caught**. That's up from 54% at the first version: most of the gain came from letting
+**Accuracy** on a 20-case final test set: **90–95% of requests fully correct** (all six fields; 18/20 blind,
+19/20 after one German fix, see EXPLAINER step 20), **6/6 urgent requests caught**. That's up from 54% at the first version: most of the gain came from letting
 code check the model's extracted facts against the customer's own words.
 
 ## Demo day (after the one-time setup below)
 
 ```powershell
 cd homecare-demo
-powershell -ExecutionPolicy Bypass -File .\start_demo.ps1      # starts Docker+n8n, Ollama, API, dashboard
-powershell -ExecutionPolicy Bypass -File .\send_example.ps1 urgent   # also: missing | german | vague | "own text"
+powershell -ExecutionPolicy Bypass -File .\start_demo.ps1         # Docker+n8n, Ollama, all 3 APIs + 3 dashboards
+powershell -ExecutionPolicy Bypass -File .\send_example.ps1 notfall  # also: fehlt | einkauf | unklar | urgent | "eigener Text"
 ```
 
-`start_demo.ps1` checks each service, starts only what isn't running, warms up the model and opens the
-dashboard and n8n. Close the two "HOMECARE" PowerShell windows to stop the API and the dashboard.
+`start_demo.ps1` checks each service, starts only what isn't running (each in a minimized "HOMECARE …" window),
+warms up both models and opens the three dashboards and n8n. Add `-NoBrowser` to start without opening tabs.
+Close a "HOMECARE …" window to stop that part.
+
+| What | Where |
+|---|---|
+| 1 Intake dashboard (Anfragen, Freigabe) | http://localhost:8501 |
+| 3 Partner analytics (Frage an die Daten, Wochenbericht) | http://localhost:8502 |
+| 4 Partner handbook assistant | http://localhost:8503 |
+| n8n (workflows A, B, C) | http://localhost:5678 |
+| APIs (docs pages) | :8000/docs, :8001/docs, :8002/docs |
 
 ## Run it (PowerShell)
 
@@ -81,7 +91,7 @@ If Telegram isn't set up, that node fails quietly and the rest of the workflow s
 - Telegram is a cloud service. Production would need a data processing agreement, or a self-hosted channel.
 - Synthetic data only (100 hand-written requests in three sets, English and German). Real messages will be
   messier, so expect lower accuracy than on the test set.
-- The 3B model still makes mistakes, more often in German. Drafted replies sometimes imply a booking or a
-  time. Rule-based guardrails catch some errors, and a human reviews every reply.
+- The 3B model still makes mistakes, more often in German. Code checks its output against the customer's
+  words, replies are written by code, and a human reviews every reply.
 - Production would need a GDPR data-protection review, an EU AI Act risk classification, access control,
   retention rules and a real integration with the CRM and messaging channels.

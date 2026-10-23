@@ -64,7 +64,7 @@ Rules:
 - preferred_contact_time: morning, afternoon or evening only if they say when staff should call or reach them.
   Appointment or service times are not contact times. Otherwise null.
 - location: a city name only, exactly as written. null if no city is named.
-- summary: one short English sentence.
+- summary: one short sentence in German (the office team reads German), even if the request is English.
 
 Examples (not real customers):
 Request: "Could someone pick up my mother's prescription from the pharmacy in Aachen tomorrow and drop it at her flat?"
@@ -97,6 +97,11 @@ TIME_PHRASES = re.compile(
 )
 RELATIVE_PLACE = re.compile(r"(near|close to|next to|around|bei|nahe|neben|in der nähe)\b", re.IGNORECASE)
 CONTACT_WORDS = re.compile(CALL_WORDS.pattern + r"|\b(reach|contact|erreichbar|erreichen|melden)", re.IGNORECASE)
+# "morgen" alone means "tomorrow" and "Guten Morgen" is a greeting, so only "morgens" counts as morning.
+DAYTIME = {"morning": "morning", "morgens": "morning", "vormittag": "morning", "vormittags": "morning",
+           "afternoon": "afternoon", "nachmittag": "afternoon", "nachmittags": "afternoon",
+           "evening": "evening", "abend": "evening", "abends": "evening"}
+DAYTIME_WORDS = re.compile(r"\b(" + "|".join(DAYTIME) + r")\b", re.IGNORECASE)
 
 
 def _words(text: str) -> list[str]:
@@ -140,6 +145,12 @@ def ground_in_text(fields: dict, text: str) -> dict:
         correct("callback_requested", False)
     if fields["preferred_contact_time"] and not CONTACT_WORDS.search(text):
         correct("preferred_contact_time", None)
+    elif fields["preferred_contact_time"]:
+        # If the sentence asking for a call names exactly one time of day, trust the customer's word.
+        said = {DAYTIME[m.group(0).lower()] for sentence in re.split(r"[.!?]", text) if CONTACT_WORDS.search(sentence)
+                for m in DAYTIME_WORDS.finditer(sentence)}
+        if len(said) == 1 and fields["preferred_contact_time"] not in said:
+            correct("preferred_contact_time", said.pop())
     return corrections
 
 
@@ -173,30 +184,112 @@ DRAFT_PROMPT = """You write short, friendly follow-up messages for a home-help s
 The service offers exactly four things: shopping and errands, transport to appointments, companionship
 visits, and household help (cleaning, laundry, tidying). Never mention any other service.
 Write in the same language as the customer's request (English or German). At most 4 sentences.
-Thank them and repeat back what they asked for. If information is missing, ask for it. If they asked for
-a callback, say a colleague will call them. Nothing is booked yet: never say a booking or appointment is
-confirmed, and do not promise a specific helper, time, or price. Sign as "Your HOMECARE team"."""
+You write AS the service TO the customer. Never ask the customer to call you, and never copy their own sentences
+("please call me ...") into the reply. Thank them and repeat back what they asked for in your own words. If
+information is missing, ask for it. If they asked for a callback, use the callback sentence given.
+Nothing is booked yet: never say a booking or appointment is confirmed, never say what you "will" do, and do not
+promise a specific helper, time, or price. Sign as "Your HOMECARE team" (German: "Ihr HOMECARE-Team")."""
+
+
+GERMAN_WORDS = {"und", "ich", "die", "der", "das", "nicht", "bitte", "meine", "mein", "meinen", "meiner", "sie",
+                "ist", "wir", "jemand", "könnte", "können", "hallo", "guten", "tag", "mit", "für", "zur", "zum", "nächsten"}
 
 
 def _looks_german(text: str) -> bool:
-    return len(set(_words(text)) & {"und", "ich", "die", "der", "nicht", "bitte", "meine", "mein", "sie", "ist"}) >= 2
+    # Words only: umlauts alone would make "Münster" or "Lünen" look German.
+    return len(set(_words(text)) & GERMAN_WORDS) >= 2
+
+
+# A draft must not ask the customer to call us, and must not promise anything: nothing is booked yet.
+ECHOED_CALL = re.compile(r"\b(rufen sie mich|ruf mich|melden sie sich bei mir|call me|ring me|contact me)\b", re.I)
+PROMISE = re.compile(
+    r"\b(i'll|i will|we'll|we will|werde ich|ich werde|werden wir|wir werden|gebucht|eingeplant|bestätig\w*|"
+    r"zugesagt|organisiert|booked|confirmed|scheduled|arranged|is set up|fahren können|kommt am|kommt um|"
+    r"kostenlos|kostenfrei|gratis|free of charge|for free)\b|\d+\s?(€|euro\b|eur\b)", re.I)
+WHEN_DE = {"morning": " am Vormittag", "afternoon": " am Nachmittag", "evening": " am Abend"}
+WHEN_EN = {"morning": " in the morning", "afternoon": " in the afternoon", "evening": " in the evening"}
+SERVICE_DE = {"shopping": "Hilfe beim Einkaufen", "transport": "eine Fahrt", "companionship": "Begleitung oder Gesellschaft",
+              "household": "Hilfe im Haushalt", "other": "Unterstützung"}
+SERVICE_EN = {"shopping": "help with shopping", "transport": "a lift", "companionship": "companionship",
+              "household": "help in the household", "other": "support"}
+ASK_DE = {"location": "In welcher Stadt wird die Hilfe gebraucht?",
+          "date": "An welchem Tag und zu welcher Uhrzeit brauchen Sie die Hilfe?",
+          "details": "Können Sie kurz beschreiben, wobei genau wir helfen dürfen?"}
+ASK_EN = {"location": "In which town is the help needed?", "date": "On which day and at what time do you need the help?",
+          "details": "Could you briefly describe what kind of help you need?"}
+
+
+def _callback_sentence(fields: dict, german: bool) -> str:
+    if not fields["callback_requested"]:
+        return ""
+    when = fields["preferred_contact_time"]
+    if german:
+        return f"Eine Kollegin oder ein Kollege ruft Sie{WHEN_DE.get(when, '')} zurück."
+    return f"A colleague will call you back{WHEN_EN.get(when, '')}."
+
+
+HEALTH_RISK = re.compile(r"\b(gestürzt|sturz|fell|fallen|atmet|atemnot|breath\w*|bewusstlos|unconscious|schmerz\w*|pain|"
+                         r"blut\w*|bleed\w*|schwach|weak|verwirrt|confused|durchfall|diarr\w*|fieber|fever|krank|ill|sick|hilflos|helpless|can\'t get up)\b", re.I)
+
+
+def _template_draft(fields: dict, german: bool, text: str = "") -> str:
+    """Reply built by code from the checked fields: restates the request, asks for what is missing, promises nothing."""
+    city = f" in {fields['location']}" if fields["location"] else ""
+    when = f" ({fields['when_needed']})" if fields.get("when_needed") else ""  # the customer's own words
+    urgent = fields["urgency"] == "high"
+    health = urgent and bool(HEALTH_RISK.search(text))
+    if german:
+        parts = ["Guten Tag, vielen Dank für Ihre Nachricht.",
+                 f"Sie suchen {SERVICE_DE[fields['service_type']]}{city}{when}."]
+        if urgent:
+            parts.append("Wir behandeln Ihre Anfrage vorrangig.")
+        if health:
+            parts.append("Bei einem medizinischen Notfall rufen Sie bitte sofort 112 an.")
+        parts += [ASK_DE[m] for m in fields["missing_info"]]
+        parts.append(_callback_sentence(fields, True) or "Eine Kollegin oder ein Kollege meldet sich mit einem Vorschlag bei Ihnen.")
+        return " ".join(parts) + "\n\nIhr HOMECARE-Team"
+    parts = ["Hello, thank you for your message.", f"You are looking for {SERVICE_EN[fields['service_type']]}{city}{when}."]
+    if urgent:
+        parts.append("We are treating your request as a priority.")
+    if health:
+        parts.append("In a medical emergency, please call 112 right away.")
+    parts += [ASK_EN[m] for m in fields["missing_info"]]
+    parts.append(_callback_sentence(fields, False) or "A colleague will get back to you with a suggestion.")
+    return " ".join(parts) + "\n\nYour HOMECARE team"
+
+
+# "template" (default): code writes the reply from the checked fields. "model": the LLM writes it and the guard
+# above falls back to the template on a promise or an echoed "call me". On the final test set the 3B model's own
+# drafts needed edits in 7 of 13 cases, so the template is the default; a larger model could change that.
+DRAFT_MODE = os.getenv("DRAFT_MODE", "template")
 
 
 def draft_followup(state: dict) -> dict:
     fields = state["fields"]
+    german = _looks_german(state["text"])
+    if DRAFT_MODE == "template":
+        draft = _template_draft(fields, german, state["text"])
+        db.update_request(state["request_id"], followup_draft=draft, followup_status="pending_approval")
+        return {"followup_draft": draft, "followup_status": "pending_approval", "draft_source": "template"}
+    callback = _callback_sentence(fields, german)
     user_message = (
         f"Customer request:\n{state['text']}\n\n"
+        f"Write the reply in {'German' if german else 'English'}.\n"
         f"Missing information to ask for: {', '.join(fields['missing_info']) or 'none'}\n"
-        f"Callback requested: {fields['callback_requested']}"
+        f"Callback sentence to include: {callback or 'none (no callback requested)'}"
     )
     draft = FollowupDraft.model_validate_json(
         ask_llm(DRAFT_PROMPT, user_message, FollowupDraft.model_json_schema())
     ).message.strip()
-    if not re.search(r"homecare[ -]team", draft, re.IGNORECASE):  # the model sometimes drops the sign-off
-        draft += "\n\nIhr HOMECARE-Team" if _looks_german(state["text"]) else "\n\nYour HOMECARE team"
+    source = "model"
+    problem = ECHOED_CALL.search(draft) or PROMISE.search(draft)
+    if problem:
+        draft, source = _template_draft(fields, german, state["text"]), f"template (model wrote '{problem.group(0)}')"
+    elif not re.search(r"homecare[ -]team", draft, re.IGNORECASE):  # the model sometimes drops the sign-off
+        draft += "\n\nIhr HOMECARE-Team" if german else "\n\nYour HOMECARE team"
     # Never sent from here: a human must approve it in the dashboard.
     db.update_request(state["request_id"], followup_draft=draft, followup_status="pending_approval")
-    return {"followup_draft": draft, "followup_status": "pending_approval"}
+    return {"followup_draft": draft, "followup_status": "pending_approval", "draft_source": source}
 
 
 SAME_DAY = re.compile(r"\b(today|tonight|this (afternoon|evening)|right now|asap|heute|sofort)\b", re.IGNORECASE)

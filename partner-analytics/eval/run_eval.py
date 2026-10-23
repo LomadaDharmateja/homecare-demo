@@ -24,7 +24,7 @@ def score(cases):
         except Exception as e:  # a crash counts as a miss
             got, notes = {"error": str(e)[:80]}, []
         wrong = {k: (v, got.get(k)) for k, v in case["expect"].items() if got.get(k) != v}
-        rows.append({"q": case["q"], "ok": not wrong, "wrong": wrong, "rules": [n for n in notes if n.startswith("Rule")],
+        rows.append({"q": case["q"], "ok": not wrong, "wrong": wrong, "rules": [n for n in notes if n.startswith("Regel")],
                      "seconds": round(time.time() - t, 1)})
     return rows
 
@@ -32,7 +32,7 @@ def score(cases):
 def main():
     which = sys.argv[1] if len(sys.argv) > 1 else "all"
     data = json.loads((HERE / "questions.json").read_text(encoding="utf-8"))
-    sets = ["tuning", "final_test"] if which == "all" else [which]
+    sets = ["tuning", "final_test", "german_tuning", "german_test"] if which == "all" else [which]
     lines = ["# Partner analytics: evaluation", "",
              "Scores the step where the local model (qwen2.5:3b) turns a question into the query form. "
              "A question counts as correct only if every expected field matches. Numbers are computed by Python "

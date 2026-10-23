@@ -1,10 +1,9 @@
-# Start everything for the demo: Docker + n8n, Ollama, the API and the dashboard.
+# Start everything for the demo: Docker + n8n, Ollama, and the three Python projects (API + dashboard each).
 # Run from PowerShell:   powershell -ExecutionPolicy Bypass -File .\start_demo.ps1
-# Safe to run twice: anything already running is left alone.
+# Safe to run twice: anything already running is left alone. Close a "HOMECARE ..." window to stop that part.
 
+param([switch]$NoBrowser)   # -NoBrowser: start and check everything, but open no tabs
 $root = $PSScriptRoot
-$svc  = Join-Path $root "intake-service"
-$py   = Join-Path $svc ".venv\Scripts\python.exe"
 
 function Test-Url($url) {
     try { Invoke-WebRequest $url -UseBasicParsing -TimeoutSec 3 | Out-Null; return $true } catch { return $false }
@@ -17,8 +16,19 @@ function Wait-Url($name, $url, $seconds) {
     Write-Host "  FAIL  $name did not answer at $url" -ForegroundColor Red
     return $false
 }
+# Starts one Python app in its own minimized window, unless something already answers on its port.
+function Start-App($title, $folder, $port, $command, $checkPath) {
+    $dir = Join-Path $root $folder
+    $py = Join-Path $dir ".venv\Scripts\python.exe"
+    $url = "http://127.0.0.1:$port$checkPath"
+    if (-not (Test-Path $py)) { Write-Host "  SKIP  $title (no .venv in $folder, see its README)" -ForegroundColor Yellow; return $false }
+    if (-not (Test-Url $url)) {
+        Start-Process powershell -WorkingDirectory $dir -WindowStyle Minimized -ArgumentList "-NoExit", "-Command", "`$host.UI.RawUI.WindowTitle='HOMECARE $title'; & '$py' -m $command"
+    }
+    return (Wait-Url ("{0,-28} http://localhost:{1}" -f $title, $port) $url 90)
+}
 
-Write-Host "1/4 Docker and n8n"
+Write-Host "1/3 Docker and n8n"
 docker info *> $null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  Starting Docker Desktop (can take a minute)..."
@@ -26,34 +36,37 @@ if ($LASTEXITCODE -ne 0) {
     for ($i = 0; $i -lt 90; $i++) { docker info *> $null; if ($LASTEXITCODE -eq 0) { break }; Start-Sleep 2 }
 }
 docker start n8n *> $null
-$okN8n = Wait-Url "n8n        http://localhost:5678" "http://localhost:5678/healthz" 90
+$ok = @(Wait-Url "n8n                          http://localhost:5678" "http://localhost:5678/healthz" 90)
 
-Write-Host "2/4 Ollama"
+Write-Host "2/3 Ollama"
 if (-not (Test-Url "http://127.0.0.1:11434")) { Start-Process ollama -ArgumentList "serve" -WindowStyle Minimized }
-$okOllama = Wait-Url "Ollama     http://localhost:11434" "http://127.0.0.1:11434" 30
+$okOllama = Wait-Url "Ollama                       http://localhost:11434" "http://127.0.0.1:11434" 30
+$ok += $okOllama
 
-Write-Host "3/4 API (agent + database)"
-if (-not (Test-Url "http://127.0.0.1:8000/requests")) {
-    Start-Process powershell -WorkingDirectory $svc -ArgumentList "-NoExit", "-Command", "`$host.UI.RawUI.WindowTitle='HOMECARE API'; & '$py' -m uvicorn app.main:app --host 127.0.0.1 --port 8000"
-}
-$okApi = Wait-Url "API        http://localhost:8000/docs" "http://127.0.0.1:8000/requests" 60
+Write-Host "3/3 Projects"
+$uv = "uvicorn app.main:app --host 127.0.0.1 --port"
+$st = "streamlit run dashboard.py --server.headless true --browser.gatherUsageStats false --server.port"
+$ok += Start-App "1 Intake API"           "intake-service"    8000 "$uv 8000" "/docs"
+$ok += Start-App "1 Intake dashboard"     "intake-service"    8501 "$st 8501" ""
+$ok += Start-App "3 Analytics API"        "partner-analytics" 8001 "$uv 8001" "/docs"
+$ok += Start-App "3 Analytics dashboard"  "partner-analytics" 8502 "$st 8502" ""
+$ok += Start-App "4 Handbook API"         "partner-handbook"  8002 "$uv 8002" "/docs"
+$ok += Start-App "4 Handbook dashboard"   "partner-handbook"  8503 "$st 8503" ""
 
-Write-Host "4/4 Dashboard"
-if (-not (Test-Url "http://127.0.0.1:8501")) {
-    Start-Process powershell -WorkingDirectory $svc -ArgumentList "-NoExit", "-Command", "`$host.UI.RawUI.WindowTitle='HOMECARE dashboard'; & '$py' -m streamlit run dashboard.py --server.headless true --server.port 8501 --browser.gatherUsageStats false"
-}
-$okDash = Wait-Url "Dashboard  http://localhost:8501" "http://127.0.0.1:8501" 60
-
-# Load the model into memory now, so the first live request isn't slow.
+# Load both models into memory now, so the first live question isn't slow.
 if ($okOllama) {
-    Write-Host "Warming up the model..."
+    Write-Host "Warming up the models..."
     try { Invoke-RestMethod http://127.0.0.1:11434/api/generate -Method Post -Body '{"model":"qwen2.5:3b","prompt":"hi","stream":false,"options":{"num_predict":1}}' -TimeoutSec 120 | Out-Null } catch {}
+    try { Invoke-RestMethod http://127.0.0.1:11434/api/embed -Method Post -Body '{"model":"granite-embedding:278m","input":"Hallo"}' -TimeoutSec 120 | Out-Null } catch {}
 }
 
-if ($okN8n -and $okOllama -and $okApi -and $okDash) {
-    Write-Host "`nAll running. Opening the dashboard and n8n." -ForegroundColor Green
-    Start-Process "http://localhost:8501"
-    Start-Process "http://localhost:5678"
+if ($ok -notcontains $false) {
+    Write-Host "`nAll running: dashboards on 8501, 8502, 8503; n8n on 5678." -ForegroundColor Green
 } else {
-    Write-Host "`nSomething did not start; see FAIL above." -ForegroundColor Red
+    Write-Host "`nSomething did not start; see FAIL/SKIP above." -ForegroundColor Red
+}
+if (-not $NoBrowser) {
+    foreach ($u in "http://localhost:8501", "http://localhost:8502", "http://localhost:8503", "http://localhost:5678") {
+        if (Test-Url $u) { Start-Process $u }
+    }
 }

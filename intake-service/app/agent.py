@@ -61,7 +61,7 @@ def process_request(intake: IntakeIn) -> dict:
 
     if "fields" not in state:
         # Fail safe, not silent: an unclassified request goes to the top of the queue for a human.
-        db.update_request(request_id, priority=1, summary="Automatic extraction failed - needs manual triage")
+        db.update_request(request_id, priority=1, summary="Automatische Auswertung fehlgeschlagen - bitte manuell prüfen")
         db.log_audit(request_id, "guardrail", output_data={"reason": "extraction failed, flagged for manual triage"})
     else:
         # Guardrail: every record needs these to be triaged correctly, and every customer deserves a

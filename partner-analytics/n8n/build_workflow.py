@@ -24,9 +24,9 @@ nodes = [
          {"url": "http://host.docker.internal:8001/report/weekly", "options": {"timeout": 120000}}, 4.2),
     node(4, "Telegram: summary + top alerts", "telegram", [500, 200],
          {"chatId": chat_id,
-          "text": "=📊 Weekly partner report {{ $json.month }}\n\n{{ $json.summary }}\n\nTop alerts:\n"
+          "text": "=📊 Wochenbericht Partnernetz {{ $json.month }}\n\n{{ $json.summary }}\n\nWichtigste Hinweise:\n"
                   "{{ $json.alerts.slice(0, 3).map(a => '• ' + a.text).join('\\n') }}\n\n"
-                  "Full report in the dashboard. (Fictional demo data)",
+                  "Ganzer Bericht im Dashboard. (Erfundene Demo-Daten)",
           "additionalFields": {"appendAttribution": False}},
          1.2, webhookId="9e3f1a20-4b5c-4d6e-8f70-1a2b3c4d5e6f",
          credentials={"telegramApi": {"id": cred_id, "name": "HOMECARE Telegram bot"}},

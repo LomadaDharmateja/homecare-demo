@@ -150,20 +150,20 @@ def run_query(spec: QuerySpec):
     notes = []
     if spec.metric in PARTNER_LEVEL:
         if spec.growth or spec.group_by == "month":
-            notes.append("This figure is per location, not per month, so the period and growth were ignored.")
+            notes.append("Diese Kennzahl gibt es pro Standort, nicht pro Monat; Zeitraum und Veränderung wurden ignoriert.")
         partners = _filter(partners, spec)
         current = _partner_value(partners, spec)
         previous = None
     else:
         monthly = _filter(monthly, spec)
         months = _months(monthly, spec.period)
-        notes.append(f"Months used: {months[0]} to {months[-1]}." if months else "No data for this period.")
+        notes.append(f"Verwendete Monate: {months[0]} bis {months[-1]}." if months else "Keine Daten für diesen Zeitraum.")
         current = _monthly_value(monthly, spec, months)
         previous = None
         if spec.growth and spec.period != "all" and spec.group_by != "month":
             prev_months = _months(monthly, spec.period, shift=1)
             previous = _monthly_value(monthly, spec, prev_months)
-            notes.append(f"Compared with {prev_months[0]} to {prev_months[-1]}.")
+            notes.append(f"Verglichen mit {prev_months[0]} bis {prev_months[-1]}.")
 
     table = current.rename("value").to_frame()
     table.index.name = "group"
@@ -174,7 +174,7 @@ def run_query(spec: QuerySpec):
         prev = table["previous"].where(table["previous"] > 0)
         table["change_pct"] = 100 * (table["value"] / prev - 1)
         if (table["previous"] <= 0).any():
-            notes.append("Change in % left out where the earlier value was zero or negative; see the difference.")
+            notes.append("Veränderung in % weggelassen, wo der frühere Wert null oder negativ war; siehe Differenz.")
         sort_col = "change_pct" if table["change_pct"].notna().any() else "difference"
     else:
         sort_col = "value"
@@ -186,16 +186,28 @@ def run_query(spec: QuerySpec):
     return table.round(1), notes
 
 
+METRIC_DE = {"revenue": "Umsatz", "costs": "Kosten", "profit": "Gewinn", "customers": "Kunden",
+             "new_customers": "Neukunden", "enquiries": "Anfragen", "hours": "geleistete Stunden",
+             "staff": "Mitarbeitende", "cash": "Liquidität", "conversion_rate": "Conversion Rate",
+             "revenue_vs_plan": "Umsatz vs. Businessplan", "locations": "Anzahl Standorte",
+             "months_to_second_location": "Monate bis zum zweiten Standort",
+             "share_with_second_location": "Anteil mit zweitem Standort"}
+GROUP_DE = {"location": "Standort", "state": "Bundesland", "founder_type": "Gründertyp",
+            "opening_year": "Eröffnungsjahr", "month": "Monat"}
+PERIOD_DE = {"last_month": "letzter Monat", "last_3_months": "letzte 3 Monate", "last_6_months": "letzte 6 Monate",
+             "last_12_months": "letzte 12 Monate", "all": "gesamter Zeitraum"}
+
+
 def describe(spec: QuerySpec):
-    """Plain-language version of the query form, shown under every answer."""
-    parts = [spec.metric.replace("_", " ")]
+    """Plain-language (German) version of the query form, shown under every answer."""
+    parts = [METRIC_DE[spec.metric]]
     if spec.group_by != "none":
-        parts.append(f"by {spec.group_by.replace('_', ' ')}")
+        parts.append(f"nach {GROUP_DE[spec.group_by]}")
     if spec.metric not in PARTNER_LEVEL:
-        parts.append(spec.period.replace("_", " "))
+        parts.append(PERIOD_DE[spec.period])
     if spec.growth:
-        parts.append("change vs. previous period")
-    for name in ("state", "founder_type", "location"):
+        parts.append("Veränderung zum Zeitraum davor")
+    for name, label in (("state", "Bundesland"), ("founder_type", "Gründertyp"), ("location", "Standort")):
         if getattr(spec, name):
-            parts.append(f"{name.replace('_', ' ')} = {getattr(spec, name)}")
+            parts.append(f"{label} = {getattr(spec, name)}")
     return ", ".join(parts)
