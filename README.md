@@ -44,6 +44,9 @@ code check the model's extracted facts against the customer's own words.
 cd homecare-demo
 powershell -ExecutionPolicy Bypass -File .\start_demo.ps1         # Docker+n8n, Ollama, all 4 APIs + 4 dashboards
 powershell -ExecutionPolicy Bypass -File .\send_example.ps1 notfall  # also: fehlt | einkauf | unklar | urgent | "eigener Text"
+# optional, before a demo: fresh example data (a backup of the old data is kept)
+cd intake-service; .\.venv\Scripts\python.exe data\reset_demo.py; cd ..
+cd partner-onboarding; .\.venv\Scripts\python.exe data\generate_data.py; cd ..
 ```
 
 `start_demo.ps1` checks each service, starts only what isn't running (each in a minimized "HOMECARE …" window),

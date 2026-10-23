@@ -269,6 +269,15 @@ check the result against the text did most of the work.
       the request. A larger model could make free-text drafts worth it again; the guard is already there.
     - **The language check was fooled by city names**: the ü in "Münster" made English requests look German.
       It now only counts German words.
+21. **Summaries written by code too (found while recording the demo).** The dashboard showed "Kinder fragen,
+    ob jemand…" for "Könnte jemand meinen Vater … fahren?": the model invented who was asking. Reading the
+    model's summaries for all 20 final-test requests: garbled German ("Rüstkörchen und Elektroläser"), some in
+    English, and two contained the customer's full name. The summary is now built by code from the checked
+    fields, e.g. *"Begleitung für Mutter in Düsseldorf, „heute“. Rückruf gewünscht. Hinweis im Text: gestürzt."*
+    It names relations (Mutter, Vater, Oma), never names, and lists health words found in the text
+    ("Blutdruckmittel" is not "Blutung"). The model's own sentence is kept in the audit log as a correction.
+    The scored fields are unchanged, so the accuracy numbers above still apply.
+    `data/reset_demo.py` resets the dashboard to five fresh example requests before a demo.
 
 ## 9. How to run everything (PowerShell)
 
