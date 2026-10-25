@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="de" data-lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Alltagshilfe automatisiert</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Fünf lokale KI- und n8n-Projekte für die Büroarbeit eines Franchise in der Alltagshilfe. Bewerbung von Lomada Dharmateja.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a profile page for one applicant. Profile header, "stories" (demo clips), a 3-column post grid of projects,
+   then the evidence sections. Each project opens as its own view (#intake, #n8n, ...).
+   Body face is Atkinson Hyperlegible, made for readers with low vision: fitting for a care subject. */
+/* Deliberately light only, for every viewer: the owner wants it bright and easy to read on any screen. */
+:root {
+  color-scheme: light;
+  --bg: #fbfcfb;          /* near-white with a green bias */
+  --band: #eef6f3;        /* soft teal wash for alternating sections */
+  --band-2: #fdf4e6;      /* soft marigold wash */
+  --surface: #ffffff;
+  --surface-2: #e9f2ee;
+  --ink: #1b2a25;         /* deep green-black */
+  --ink-soft: #52635c;
+  --line: #dbe5e0;
+  --accent: #0b7a6e;      /* care teal */
+  --accent-ink: #ffffff;
+  --sun: #e09a2d;         /* marigold, used for the story ring and key numbers */
+  --sun-ink: #2a1a03;
+  --good: #2f8a55;
+  --warn: #b5651d;
+  --shadow: 0 1px 2px rgb(27 42 37 / .05), 0 10px 30px rgb(27 42 37 / .08);
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --step-0: 1rem; --step-1: 1.2rem; --step-2: 1.5rem; --step-3: 2rem; --step-4: clamp(2.2rem, 5vw, 3.2rem);
+  --radius: 14px;
+}
+
+/* Language switch: every text exists twice; the root's data-lang hides one. */
+html[data-lang="de"] [lang="en"]:not(html), html[data-lang="en"] [lang="de"]:not(html) { display: none !important; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { animation: none !important; transition: none !important; } }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 var(--step-0)/1.6 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+img { max-width: 100%; display: block; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; border-radius: 6px; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.15; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: var(--step-3); font-weight: 800; }
+h3 { font-size: var(--step-1); font-weight: 700; }
+p { margin: 0; }
+.wrap { max-width: 960px; margin: 0 auto; }
+.eyebrow { font: 700 .78rem/1.2 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--ink-soft); }
+
+/* Top bar */
+.topbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  border-bottom: 1px solid var(--line); margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px));
+}
+.topbar .wrap { display: flex; align-items: center; gap: 12px; }
+.handle { font: 700 1.05rem var(--font-display); color: var(--ink); text-decoration: none; margin-right: auto; }
+.lang { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface); }
+.lang button {
+  font: 700 .8rem var(--font-mono); border: 0; background: transparent; color: var(--ink-soft);
+  padding: 5px 12px; border-radius: 999px; cursor: pointer;
+}
+.lang button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.icon-link { font: 700 .85rem var(--font-mono); color: var(--ink); text-decoration: none; border: 1px solid var(--line);
+  border-radius: 999px; padding: 6px 12px; background: var(--surface); }
+
+/* Profile header */
+.profile {
+  display: grid; grid-template-columns: auto 1fr; gap: clamp(20px, 5vw, 56px); align-items: center;
+  margin-top: 24px; padding: clamp(20px, 4vw, 40px); border-radius: 22px;
+  background: linear-gradient(135deg, var(--band) 0%, var(--surface) 55%, var(--band-2) 100%);
+  border: 1px solid var(--line);
+}
+.avatar {
+  width: clamp(96px, 20vw, 152px); aspect-ratio: 1; border-radius: 50%; padding: 4px; max-width: 100%;
+  background: conic-gradient(from 200deg, var(--accent), var(--sun), var(--accent));
+}
+.avatar span {
+  display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; border: 4px solid var(--bg);
+  background: var(--surface-2); font: 800 clamp(2rem, 6vw, 3.2rem) var(--font-display); color: var(--ink);
+}
+.who { display: grid; gap: 12px; min-width: 0; }
+.who h1 { font-size: var(--step-4); font-weight: 800; }
+.role { font-weight: 700; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 28px; }
+.stats div { display: grid; }
+.stats b { font: 700 var(--step-2)/1 var(--font-mono); }
+.stats span { font-size: .9rem; color: var(--ink-soft); }
+.bio { max-width: 60ch; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; font: 700 .95rem var(--font-body); text-decoration: none;
+  padding: 10px 18px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+@media (max-width: 560px) { .profile { grid-template-columns: 1fr; justify-items: start; } }
+
+/* Stories: demo clips */
+.stories { display: flex; gap: 18px; overflow-x: auto; padding: 8px 2px 14px; scrollbar-width: thin; }
+.story { flex: 0 0 auto; display: grid; justify-items: center; gap: 6px; background: none; border: 0; cursor: pointer; color: var(--ink); font: 400 .85rem var(--font-body); width: 84px; }
+.story .ring { width: 76px; height: 76px; border-radius: 50%; padding: 3px; background: conic-gradient(from 140deg, var(--sun), var(--accent), var(--sun)); }
+.story img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; object-position: left top; border: 3px solid var(--bg); }
+.story span { text-align: center; line-height: 1.25; }
+
+/* Post grid */
+.grid-head { display: flex; justify-content: center; gap: 28px; border-top: 1px solid var(--line); margin-top: 8px; }
+.grid-head span { font: 700 .78rem var(--font-mono); letter-spacing: .1em; text-transform: uppercase; padding: 12px 0; border-top: 2px solid var(--ink); margin-top: -1px; }
+.posts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 760px) { .posts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .posts { grid-template-columns: 1fr; } }
+.post {
+  position: relative; overflow: hidden; border-radius: 16px; background: var(--surface); border: 1px solid var(--line);
+  display: grid; grid-template-rows: auto 1fr; color: var(--ink); text-decoration: none; box-shadow: var(--shadow);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.post .shot { aspect-ratio: 4 / 3; overflow: hidden; background: var(--surface-2); }
+.post img { width: 100%; height: 100%; object-fit: cover; object-position: left top; transition: transform .4s ease; }
+.post .cap { padding: 14px 16px 16px; display: grid; gap: 4px; align-content: start; }
+.post .cap b { font: 700 1.1rem/1.2 var(--font-display); }
+.post .cap small { font-size: .9rem; color: var(--ink-soft); }
+.post .cap .more { margin-top: 6px; font: 700 .85rem var(--font-body); color: var(--accent); }
+.post .badge { position: absolute; top: 12px; right: 12px; font: 700 .8rem var(--font-mono); background: var(--sun); color: var(--sun-ink); padding: 5px 9px; border-radius: 8px; box-shadow: var(--shadow); }
+.post:hover { transform: translateY(-3px); box-shadow: 0 2px 4px rgb(27 42 37 / .06), 0 16px 36px rgb(27 42 37 / .12); }
+.post:hover img { transform: scale(1.04); }
+.post.text { grid-template-rows: 1fr; align-content: end; padding: 20px; background: linear-gradient(160deg, var(--band-2), var(--band)); }
+.post.text .cap { padding: 0; }
+.post.text b { font: 800 1.35rem/1.15 var(--font-display); }
+
+/* Sections */
+section.block { margin-top: 48px; padding: clamp(20px, 4vw, 36px); border-radius: 22px; display: grid; gap: 20px; }
+#anforderungen, #plan { background: var(--band); }
+#ideen, #arbeitsweise { background: var(--band-2); }
+.lede { max-width: 62ch; color: var(--ink-soft); }
+.map { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.map-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 16px; padding: 14px 18px; border-top: 1px solid var(--line); }
+.map-row:first-child { border-top: 0; }
+.map-row .ask { font-weight: 700; }
+.map-row .proof a { font-weight: 700; }
+@media (max-width: 560px) { .map-row { grid-template-columns: 1fr; gap: 4px; } }
+.ideas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 760px) { .ideas { grid-template-columns: 1fr; } }
+.idea { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: grid; gap: 10px; align-content: start; }
+.idea dl { margin: 0; display: grid; gap: 6px; font-size: .92rem; }
+.idea dt { font: 700 .72rem var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+.idea dd { margin: 0; }
+.timeline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.timeline > div { padding: 18px; display: grid; gap: 8px; align-content: start; border-left: 1px solid var(--line); }
+.timeline > div:first-child { border-left: 0; }
+.timeline .days { font: 700 .85rem var(--font-mono); color: var(--accent); }
+.timeline ul, .principles ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; }
+@media (max-width: 760px) { .timeline { grid-template-columns: 1fr; } .timeline > div { border-left: 0; border-top: 1px solid var(--line); } .timeline > div:first-child { border-top: 0; } }
+.principles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 640px) { .principles { grid-template-columns: 1fr; } }
+.principle { padding: 4px 0 4px 16px; border-left: 3px solid var(--accent); display: grid; gap: 6px; }
+.note { font-size: .92rem; color: var(--ink-soft); max-width: 70ch; }
+footer { padding-block: 56px 40px; display: grid; gap: 8px; font-size: .9rem; color: var(--ink-soft); }
+
+/* Project view */
+.view-project { padding-block: 24px 40px; display: grid; gap: 28px; }
+.back { font: 700 .9rem var(--font-mono); text-decoration: none; }
+.p-head { display: grid; gap: 10px; }
+.p-head h1 { font-size: var(--step-4); font-weight: 800; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font: 500 .78rem var(--font-mono); padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--ink); }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+.media { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: var(--surface-2); box-shadow: var(--shadow); }
+.media img { width: 100%; }
+.media figcaption { font-size: .85rem; color: var(--ink-soft); padding: 8px 12px; background: var(--surface); }
+.metrics { display: flex; flex-wrap: wrap; gap: 12px; }
+.metric { flex: 1 1 160px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 4px; }
+.metric b { font: 700 var(--step-3)/1 var(--font-mono); color: var(--accent); }
+.metric span { font-size: .9rem; color: var(--ink-soft); }
+.flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.flow .step { flex: 1 1 140px; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .92rem; display: grid; gap: 2px; }
+.flow .step .who-does { font: 700 .7rem var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.who-ai { color: var(--sun); } .who-code { color: var(--accent); } .who-human { color: var(--good); } .who-tool { color: var(--ink-soft); }
+.flow .arrow { align-self: center; color: var(--ink-soft); font-family: var(--font-mono); }
+@media (max-width: 640px) { .flow { flex-direction: column; } .flow .arrow { transform: rotate(90deg); align-self: start; padding-left: 16px; } }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font: 500 .78rem var(--font-mono); }
+.fixes { display: grid; gap: 12px; counter-reset: fix; }
+.fix { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 6px; }
+.fix .was { font-weight: 700; }
+.fix .now { color: var(--ink-soft); }
+.fix .now::before { content: "→ "; color: var(--accent); font-weight: 700; }
+.carousel { display: grid; grid-auto-flow: column; grid-auto-columns: min(86%, 620px); gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 10px; }
+.carousel figure { margin: 0; scroll-snap-align: start; }
+.pager { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); padding-top: 18px; flex-wrap: wrap; }
+.pager a { font-weight: 700; text-decoration: none; }
+
+/* Story viewer */
+dialog { border: 0; padding: 0; border-radius: 16px; background: var(--surface); color: var(--ink); max-width: min(920px, 94vw); width: 100%; box-shadow: var(--shadow); }
+dialog::backdrop { background: rgb(5 10 9 / .75); }
+.dlg { display: grid; gap: 0; }
+.dlg-top { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.dlg-top b { margin-right: auto; font-family: var(--font-display); }
+.dlg img { width: 100%; background: var(--surface-2); }
+.dlg-bottom { padding: 12px 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
+.close { border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 4px 12px; cursor: pointer; font: 700 .85rem var(--font-mono); }
+[data-view] { min-width: 0; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="handle" href="#top">lomada.dharmateja</a>
+    <div class="lang" role="group" aria-label="Sprache / Language">
+      <button type="button" id="lang-de" data-set-lang="de" aria-pressed="true">DE</button>
+      <button type="button" id="lang-en" data-set-lang="en" aria-pressed="false">EN</button>
+    </div>
+    <a class="icon-link" href="https://github.com/LomadaDharmateja/homecare-demo" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</header>
+
+<main class="wrap" id="top">
+
+<!-- HOME VIEW -->
+<div data-view="home">
+  <div class="profile">
+    <div class="avatar" aria-hidden="true"><span>LD</span></div>
+    <div class="who">
+      <h1>Lomada Dharmateja</h1>
+      <p class="role"><span lang="de">Bewerbung als AI &amp; Automation Engineer · HOMECARE – die Alltagshelfer, Düsseldorf</span><span lang="en">Application: AI &amp; Automation Engineer · HOMECARE – die Alltagshelfer, Düsseldorf</span></p>
+      <div class="stats">
+        <div><b>5</b><span lang="de">Projekte</span><span lang="en">projects</span></div>
+        <div><b>5</b><span lang="de">n8n-Workflows</span><span lang="en">n8n workflows</span></div>
+        <div><b>100 %</b><span lang="de">lokal auf dem Laptop</span><span lang="en">local on a laptop</span></div>
+      </div>
+      <p class="bio"><span lang="de">Ich automatisiere Büroarbeit in der Alltagshilfe: mit KI, die auf dem eigenen Rechner läuft, Vorschläge macht und Menschen entscheiden lässt. Alles hier habe ich für diese Bewerbung gebaut und mit eigenen Testfällen gemessen.</span><span lang="en">I automate office work in home care: with AI that runs on your own machine, makes suggestions and leaves decisions to people. I built everything here for this application and measured it with my own test cases.</span></p>
+      <div class="actions">
+        <a class="btn primary" href="#projekte"><span lang="de">Projekte ansehen</span><span lang="en">See the projects</span></a>
+        <a class="btn" href="#anforderungen"><span lang="de">Ihre Anforderungen → meine Nachweise</span><span lang="en">Your requirements → my proof</span></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="stories" id="stories" aria-label="Demo-Clips"></div>
+
+  <div id="projekte" class="grid-head"><span lang="de">Projekte</span><span lang="en">Projects</span></div>
+  <div class="posts" id="posts"></div>
+
+  <section class="block" id="anforderungen">
+    <p class="eyebrow"><span lang="de">Aus der Stellenanzeige</span><span lang="en">From the job ad</span></p>
+    <h2><span lang="de">Sie suchen → hier ist es</span><span lang="en">You asked for → here it is</span></h2>
+    <div class="map" id="map"></div>
+  </section>
+
+  <section class="block" id="ideen">
+    <p class="eyebrow"><span lang="de">Noch nicht gebaut</span><span lang="en">Not built yet</span></p>
+    <h2><span lang="de">Was ich als Nächstes bauen würde</span><span lang="en">What I would build next</span></h2>
+    <p class="lede"><span lang="de">Drei Ideen, die auf den fertigen Projekten aufbauen. Aufwand ist meine Schätzung für einen ersten Pilot.</span><span lang="en">Three ideas that build on the finished projects. Effort is my estimate for a first pilot.</span></p>
+    <div class="ideas" id="ideas"></div>
+  </section>
+
+  <section class="block" id="plan">
+    <p class="eyebrow"><span lang="de">Wenn ich anfange</span><span lang="en">If I start</span></p>
+    <h2><span lang="de">Meine ersten 90 Tage</span><span lang="en">My first 90 days</span></h2>
+    <div class="timeline">
+      <div>
+        <span class="days">Tag 1–30</span>
+        <h3><span lang="de">Zuhören und messen</span><span lang="en">Listen and measure</span></h3>
+        <ul lang="de"><li>Mit Zentrale und zwei, drei Partnern die Abläufe ansehen: Anfragen, Onboarding, Berichte</li><li>Messen, wo Zeit verloren geht (Minuten pro Anfrage, Rückfragen, Excel-Arbeit)</li><li>Datenschutz und Systeme mit den Zuständigen klären</li><li>Einen kleinen, sicheren Gewinn liefern</li></ul>
+        <ul lang="en"><li>Walk through the processes with head office and two or three partners: requests, onboarding, reports</li><li>Measure where time goes (minutes per request, follow-up questions, spreadsheet work)</li><li>Agree data protection and systems with the people responsible</li><li>Deliver one small, safe win</li></ul>
+      </div>
+      <div>
+        <span class="days">Tag 31–60</span>
+        <h3><span lang="de">Ein Pilot, im echten Alltag</span><span lang="en">One pilot, in real daily work</span></h3>
+        <ul lang="de"><li>Das Tool mit dem größten Nutzen mit einem Team starten, mit Freigabe durch Menschen</li><li>Jede Woche Zahlen und Rückmeldungen ansehen und nachbessern</li><li>Kurze Einweisung, Erklärseite in einfacher Sprache</li></ul>
+        <ul lang="en"><li>Start the most useful tool with one team, with human approval</li><li>Review numbers and feedback every week and improve</li><li>Short introduction and a plain-language guide</li></ul>
+      </div>
+      <div>
+        <span class="days">Tag 61–90</span>
+        <h3><span lang="de">Ausbauen und übergeben</span><span lang="en">Expand and hand over</span></h3>
+        <ul lang="de"><li>Ergebnis des Piloten offen berichten, auch was nicht funktioniert hat</li><li>Zweiten Ablauf angehen</li><li>Dokumentation, damit das Team die Tools ohne mich betreiben kann; Plan für die nächsten sechs Monate</li></ul>
+        <ul lang="en"><li>Report the pilot's result openly, including what didn't work</li><li>Take on a second process</li><li>Documentation so the team can run the tools without me; a plan for the next six months</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="arbeitsweise">
+    <p class="eyebrow"><span lang="de">In allen Projekten gleich</span><span lang="en">The same in every project</span></p>
+    <h2><span lang="de">So arbeite ich</span><span lang="en">How I work</span></h2>
+    <div class="principles">
+      <div class="principle"><h3><span lang="de">Daten bleiben im Haus</span><span lang="en">Data stays in-house</span></h3><p lang="de">Ein kleines KI-Modell (qwen2.5, 3 Mrd. Parameter) läuft auf dem Laptop. Keine Kundendaten gehen an eine Cloud-KI. Telegram-Hinweise enthalten nur Fallnummer, Leistung und Stadt.</p><p lang="en">A small AI model (qwen2.5, 3B parameters) runs on the laptop. No customer data goes to a cloud AI. Telegram alerts carry only case number, service and city.</p></div>
+      <div class="principle"><h3><span lang="de">Die KI schlägt vor, ein Mensch entscheidet</span><span lang="en">The AI suggests, a person decides</span></h3><p lang="de">Nichts geht automatisch an Kunden oder Partner. Jede Freigabe steht mit Name und Zeit im Protokoll, mit vorher, nachher und Beleg.</p><p lang="en">Nothing goes to customers or partners automatically. Every approval is logged with name and time, before, after and evidence.</p></div>
+      <div class="principle"><h3><span lang="de">Code rechnet, die KI versteht</span><span lang="en">Code calculates, the AI understands</span></h3><p lang="de">Zahlen, Fristen und Antworttexte kommen aus Code. Die KI liest und ordnet ein, und Code prüft ihr Ergebnis gegen den Originaltext.</p><p lang="en">Numbers, deadlines and reply texts come from code. The AI reads and sorts, and code checks its output against the original text.</p></div>
+      <div class="principle"><h3><span lang="de">Ehrlich gemessen</span><span lang="en">Measured honestly</span></h3><p lang="de">Testfälle schreibe ich, bevor ich baue. Blinde Ergebnisse weise ich getrennt aus, auch wenn sie schlechter sind.</p><p lang="en">I write test cases before I build. Blind results are reported separately, even when they are worse.</p></div>
+    </div>
+    <p class="note"><span lang="de">Diese Grundsätze passen zu DSGVO (Datenminimierung, Zweckbindung) und EU AI Act (Transparenz, menschliche Aufsicht, Protokollierung). Für einen echten Betrieb gehören Datenschutzbeauftragte, ein Verarbeitungsverzeichnis und, wo nötig, eine Folgenabschätzung dazu.</span><span lang="en">These principles fit the GDPR (data minimisation, purpose limitation) and the EU AI Act (transparency, human oversight, logging). Real operation also needs the data protection officer, a record of processing and, where required, an impact assessment.</span></p>
+  </section>
+</div>
+
+<!-- PROJECT VIEW (filled by script) -->
+<div data-view="project" class="view-project" id="project" hidden></div>
+
+<footer>
+  <p><span lang="de">Eigenes Bewerbungsprojekt, nicht von HOMECARE beauftragt oder geprüft. Alle Namen, Anfragen, Partner, Zahlen und das Handbuch sind erfunden.</span><span lang="en">Independent application project, not commissioned or reviewed by HOMECARE. All names, requests, partners, numbers and the handbook are invented.</span></p>
+  <p><span lang="de">Kontakt: über die E-Mail-Adresse in meiner Bewerbung. Code:</span><span lang="en">Contact: via the email address in my application. Code:</span> <a href="https://github.com/LomadaDharmateja/homecare-demo" target="_blank" rel="noopener">github.com/LomadaDharmateja/homecare-demo</a></p>
+</footer>
+</main>
+
+<dialog id="viewer" aria-labelledby="viewer-title">
+  <div class="dlg">
+    <div class="dlg-top"><b id="viewer-title"></b><button class="close" type="button" id="viewer-close"><span lang="de">Schließen</span><span lang="en">Close</span></button></div>
+    <img id="viewer-img" alt="">
+    <div class="dlg-bottom"><span class="muted" id="viewer-cap"></span><a class="btn primary" id="viewer-go" href="#"><span lang="de">Projekt ansehen</span><span lang="en">Open project</span></a></div>
+  </div>
+</dialog>
+
+<script>
+const REPO = "https://github.com/LomadaDharmateja/homecare-demo/tree/main/";
+const t = (o) => `<span lang="de">${o.de}</span><span lang="en">${o.en}</span>`;
+const tp = (o) => `<p lang="de">${o.de}</p><p lang="en">${o.en}</p>`;
+const WHO = { ai: { de: "KI", en: "AI" }, code: { de: "Code", en: "Code" }, human: { de: "Mensch", en: "Person" }, tool: { de: "Werkzeug", en: "Tool" } };
+
+const PROJECTS = [
+  {
+    id: "intake", folder: "intake-service", cover: "p1_request_list.jpg", clip: "p1_intake_urgent_request.gif",
+    story: { de: "Anfragen", en: "Requests" },
+    title: { de: "Kundenanfragen-Assistent", en: "Customer request assistant" },
+    teaser: { de: "Liest Anfragen, erkennt Dringendes, bereitet die Antwort vor", en: "Reads requests, spots urgent ones, prepares the reply" },
+    badge: "19/20",
+    tags: ["Python", "FastAPI", "Ollama · qwen2.5:3b", "SQLite", "Streamlit", "n8n", "Telegram"],
+    problem: { de: "Angehörige schreiben per Formular oder E-Mail, oft in Eile und unvollständig: „Meine Mutter ist gestürzt, kann heute noch jemand kommen?“ Das Büro muss jede Nachricht lesen, die Dringlichkeit einschätzen, fehlende Angaben nachfragen und Rückrufe im Blick behalten.",
+               en: "Relatives write via a form or email, often in a hurry and incomplete: “My mother fell, can someone come today?” The office has to read every message, judge how urgent it is, ask for missing details and keep track of callbacks." },
+    does: { de: "Ein lokaler KI-Agent liest jede Anfrage und wählt aus vier Werkzeugen (höchstens vier Schritte): Angaben erfassen, Fehlendes prüfen, Priorität setzen, Antwort vorbereiten. Code prüft jede Angabe gegen die Worte des Kunden. Antwort und Zusammenfassung schreibt Code aus den geprüften Angaben. Ein Mensch gibt jede Antwort frei. Dringende Fälle lösen über n8n einen Telegram-Hinweis aus; jeden Morgen meldet n8n überfällige Rückrufe.",
+            en: "A local AI agent reads each request and picks from four tools (at most four steps): extract details, check what is missing, set priority, prepare a reply. Code checks every detail against the customer's own words. Code writes the reply and summary from the checked details. A person approves every reply. Urgent cases trigger a Telegram alert through n8n; every morning n8n reports overdue callbacks." },
+    flow: [["tool", { de: "Formular / E-Mail → n8n", en: "Form / email → n8n" }], ["ai", { de: "liest Leistung, Ort, Termin, Dringlichkeit", en: "reads service, city, date, urgency" }],
+           ["code", { de: "prüft jede Angabe am Originaltext", en: "checks each detail against the text" }], ["code", { de: "schreibt Antwort-Entwurf und Zusammenfassung", en: "writes reply draft and summary" }],
+           ["human", { de: "gibt frei oder lehnt ab", en: "approves or rejects" }]],
+    metrics: [["19/20", { de: "Anfragen komplett richtig im Abschlusstest (18/20 blind)", en: "requests fully correct in the final test (18/20 blind)" }],
+              ["6/6", { de: "dringende Fälle erkannt", en: "urgent cases caught" }],
+              ["54 → 95 %", { de: "komplett richtig: erste Version → heute", en: "fully correct: first version → now" }]],
+    fixes: [
+      [{ de: "Die erste Version lag bei 54 %. Das Modell erfand Angaben, zum Beispiel einen Ort, der nicht in der Nachricht stand.", en: "The first version scored 54%. The model invented details, for example a city that wasn't in the message." },
+       { de: "Code prüft jede Angabe gegen die Worte des Kunden. Das brachte den größten Sprung.", en: "Code checks every detail against the customer's words. That gave the biggest jump." }],
+      [{ de: "„Bitte rufen Sie mich abends an“ wurde als Nachmittag gelesen.", en: "“Bitte rufen Sie mich abends an” (call me in the evening) was read as afternoon." },
+       { de: "Nennt der Rückruf-Satz genau eine Tageszeit, gilt das Wort des Kunden.", en: "If the callback sentence names exactly one time of day, the customer's word wins." }],
+      [{ de: "KI-Antworten versprachen Dinge („Ab Dienstag werde ich einkaufen“) oder schickten „Bitte rufen Sie mich an“ an den Kunden zurück. 7 von 13 brauchten Korrekturen.", en: "AI replies promised things (“From Tuesday I will do the shopping”) or sent “please call me” back to the customer. 7 of 13 needed edits." },
+       { de: "Code schreibt die Antwort aus den geprüften Angaben. Die KI macht, was sie gut kann: verstehen.", en: "Code writes the reply from the checked details. The AI does what it is good at: understanding." }],
+      [{ de: "Beim Aufnehmen der Demo: KI-Zusammenfassungen in holprigem Deutsch, zweimal mit dem vollen Namen der Kundin.", en: "While recording the demo: AI summaries in clumsy German, twice with the customer's full name." },
+       { de: "Code baut die Zusammenfassung: Verwandtschaft statt Namen, Gesundheitswörter als Hinweis („gestürzt“).", en: "Code builds the summary: relation instead of names, health words flagged (“fell”)." }]],
+    shots: [["p1_request_list.jpg", { de: "Offene Anfragen, dringende zuerst", en: "Open requests, urgent first" }],
+            ["p1_draft_urgent_de.jpg", { de: "Entwurf mit 112-Hinweis, wartet auf Freigabe", en: "Draft with 112 note, waiting for approval" }],
+            ["p1_draft_missing_city.jpg", { de: "Fehlt die Stadt, fragt der Entwurf nach", en: "City missing: the draft asks for it" }],
+            ["p1_metrics.jpg", { de: "Kennzahlen", en: "Key figures" }], ["n8n_A_intake.jpg", { de: "n8n-Workflow A", en: "n8n workflow A" }]],
+  },
+  {
+    id: "n8n", folder: "n8n", cover: "n8n_E_onboarding.jpg", clip: "n8n_workflows.jpg",
+    story: { de: "n8n", en: "n8n" },
+    title: { de: "Automatisierungen mit n8n", en: "Automations with n8n" },
+    teaser: { de: "Fünf Workflows verbinden Formulare, KI, Datenbank und Telegram", en: "Five workflows connect forms, AI, database and Telegram" },
+    badge: "5",
+    tags: ["n8n (Docker, selbst gehostet)", "Webhooks", "Zeitpläne", "REST-APIs", "Telegram"],
+    problem: { de: "Gute Tools helfen nur, wenn sie im Alltag ankommen: zur richtigen Zeit, im richtigen Kanal. Dafür braucht es Verbindungen zwischen Formular, KI, Datenbank und Messenger, die auch Nicht-Programmierer lesen können.",
+               en: "Good tools only help when they reach daily work: at the right time, in the right channel. That needs connections between form, AI, database and messenger that non-programmers can read too." },
+    does: { de: "Fünf Workflows, alle lokal in n8n: A nimmt Anfragen per Webhook an, ruft den Agenten auf, meldet Dringendes per Telegram und schreibt ein CSV-Protokoll. B prüft täglich um 8 Uhr überfällige Rückrufe. C holt montags den Wochenbericht der Partner. D ist ein Chat zum Partnerhandbuch. E nimmt Partner-Updates an und schickt werktags um 8:30 die Onboarding-Risiken. Make und Zapier funktionieren nach demselben Prinzip; n8n habe ich gewählt, weil es selbst gehostet werden kann.",
+            en: "Five workflows, all local in n8n: A takes requests by webhook, calls the agent, sends urgent cases to Telegram and writes a CSV log. B checks overdue callbacks daily at 8:00. C fetches the partners' weekly report on Mondays. D is a chat for the partner handbook. E takes partner updates and sends onboarding risks on weekdays at 8:30. Make and Zapier work the same way; I chose n8n because it can be self-hosted." },
+    flow: [["tool", { de: "Auslöser: Webhook, Zeitplan, Chat", en: "Trigger: webhook, schedule, chat" }], ["tool", { de: "lokale API (FastAPI)", en: "local API (FastAPI)" }],
+           ["code", { de: "Wenn-Dann: nur Dringendes melden", en: "If-then: alert only urgent cases" }], ["tool", { de: "Telegram, Datei, Antwort", en: "Telegram, file, reply" }]],
+    metrics: [["5", { de: "Workflows, alle veröffentlicht", en: "workflows, all published" }],
+              ["3", { de: "Angaben pro Telegram-Hinweis: Fall, Leistung, Stadt", en: "details per Telegram alert: case, service, city" }],
+              ["0", { de: "Tokens oder Passwörter im Code", en: "tokens or passwords in the code" }]],
+    fixes: [
+      [{ de: "Die fertige Chat-Seite von n8n lädt ihren Code aus dem Internet.", en: "n8n's ready-made chat page loads its code from the internet." },
+       { de: "Für „alles lokal“ nutzt der Handbuch-Chat den eingebauten Chat in n8n.", en: "For “everything local”, the handbook chat uses n8n's built-in chat." }],
+      [{ de: "Ein Telegram-Bot, der Fragen empfängt, bräuchte eine öffentliche Adresse ins Internet.", en: "A Telegram bot that receives questions would need a public internet address." },
+       { de: "Bewusst weggelassen; Telegram sendet nur Hinweise nach außen.", en: "Left out on purpose; Telegram only sends alerts out." }],
+      [{ de: "Ausdrücke mit Pfeilfunktionen und Zeilenumbrüchen schlugen in n8n fehl.", en: "Expressions with arrow functions and line breaks failed in n8n." },
+       { de: "Einfache Schreibweise, die jeder im Editor lesen kann.", en: "Plain syntax that anyone can read in the editor." }]],
+    shots: [["n8n_workflows.jpg", { de: "Alle fünf Workflows", en: "All five workflows" }], ["n8n_A_intake.jpg", { de: "A: Anfrage → Agent → Telegram + CSV", en: "A: request → agent → Telegram + CSV" }],
+            ["n8n_C_weekly_report.jpg", { de: "C: Montagsbericht", en: "C: Monday report" }], ["n8n_D_handbook_chat.jpg", { de: "D: Handbuch-Chat", en: "D: handbook chat" }],
+            ["n8n_E_onboarding.jpg", { de: "E: Partner-Updates und tägliche Risiken", en: "E: partner updates and daily risks" }]],
+  },
+  {
+    id: "analytics", folder: "partner-analytics", cover: "p3_chart_table.jpg", clip: "p3_analytics_question_and_report.gif",
+    story: { de: "Zahlen", en: "Numbers" },
+    title: { de: "Fragen an die Partnerzahlen", en: "Ask the partner numbers" },
+    teaser: { de: "Fragen in normaler Sprache, jede Zahl rechnet Python", en: "Questions in plain language, Python computes every number" },
+    badge: "10/10",
+    tags: ["Python", "pandas", "Pydantic", "Ollama · qwen2.5:3b", "Streamlit", "n8n", "Telegram"],
+    problem: { de: "Die Zentrale hat Zahlen von vielen Standorten. Wer wissen will „Welche drei Standorte haben die wenigste Liquidität?“, braucht heute jemanden mit Excel und Zeit. Und Warnzeichen fallen oft erst im Monatsabschluss auf.",
+               en: "Head office has numbers from many locations. Anyone who wants to know “Which three locations have the least cash?” needs someone with Excel and time today. And warning signs often show only at month end." },
+    does: { de: "Die KI schreibt kein SQL und rechnet nichts: Sie füllt nur ein Abfrage-Formular aus festen Listen aus (Kennzahl, Gruppierung, Zeitraum). Python rechnet, der Antwortsatz wird aus den Zahlen gebaut, und jede Antwort zeigt „So wurde gerechnet“. Jeden Montag prüft ein Bericht alle Standorte auf Frühwarnzeichen; die KI-Zusammenfassung wird nur gezeigt, wenn jede Zahl darin stimmt. Demo mit 55 erfundenen Standorten.",
+            en: "The AI writes no SQL and calculates nothing: it only fills in a query form from fixed lists (metric, grouping, period). Python calculates, the answer sentence is built from the numbers, and every answer shows how it was calculated. Every Monday a report checks all locations for early warnings; the AI summary is shown only if every number in it is right. Demo with 55 invented locations." },
+    flow: [["human", { de: "fragt in normaler Sprache", en: "asks in plain language" }], ["ai", { de: "füllt Abfrage-Formular aus festen Listen", en: "fills a query form from fixed lists" }],
+           ["code", { de: "Regeln fangen typische Fehler ab", en: "rules catch typical mistakes" }], ["code", { de: "Python rechnet, Satz aus den Zahlen", en: "Python computes, sentence from the numbers" }]],
+    metrics: [["10/10", { de: "deutsche Testfragen, nie daran nachgebessert", en: "German test questions, never tuned on" }],
+              ["14/15", { de: "Abschlusstest (13/15 blind)", en: "final test (13/15 blind)" }],
+              ["0", { de: "Zahlen, die die KI selbst rechnet", en: "numbers the AI calculates itself" }]],
+    fixes: [
+      [{ de: "„Umsatz in Bayern“ wurde nach Standort aufgeteilt, und Bayern fiel als Filter weg.", en: "“Revenue in Bavaria” was split by location, and Bavaria was dropped as a filter." },
+       { de: "Regeln erkennen solche Fehler, korrigieren sie und zeigen es im Rechenweg an.", en: "Rules spot such mistakes, fix them and show it in the calculation trail." }],
+      [{ de: "„Nach Bundesland“ zeigte nur 10 von 13 Ländern.", en: "“By state” showed only 10 of 13 states." },
+       { de: "Wird keine Anzahl genannt, kommen alle.", en: "If no number is asked for, all are shown." }],
+      [{ de: "Die KI-Zusammenfassung schrieb „+1.4 %“ statt „+1,4 %“.", en: "The AI summary wrote “+1.4 %” instead of the German “+1,4 %”." },
+       { de: "Zahlen gehen fertig formatiert an die KI, und Code prüft jede Zahl im Ergebnis.", en: "Numbers go to the AI pre-formatted, and code checks every number in its output." }]],
+    shots: [["p3_answer.jpg", { de: "Antwort auf eine deutsche Frage", en: "Answer to a German question" }], ["p3_chart_table.jpg", { de: "Diagramm und Tabelle", en: "Chart and table" }],
+            ["p3_calculation_trail.jpg", { de: "So wurde gerechnet", en: "How it was calculated" }], ["p3_weekly_report.jpg", { de: "Wochenbericht mit Frühwarnungen", en: "Weekly report with early warnings" }]],
+  },
+  {
+    id: "handbook", folder: "partner-handbook", cover: "p4_answer_with_source.jpg", clip: "p4_handbook_answer_and_refusal.gif",
+    story: { de: "Handbuch", en: "Handbook" },
+    title: { de: "Partnerhandbuch-Assistent", en: "Partner handbook assistant" },
+    teaser: { de: "Antwortet nur aus dem Handbuch, mit Quelle, und sagt, wenn es nichts weiß", en: "Answers only from the handbook, with sources, and says when it doesn't know" },
+    badge: "14/15",
+    tags: ["Python", "Ollama · qwen2.5:3b", "granite-embedding", "Hybrid-Suche", "Streamlit", "n8n-Chat"],
+    problem: { de: "Partner und ihre Teams haben täglich Fragen: „Darf eine Helferin ein Geschenk annehmen?“ Die Antwort steht im Handbuch, irgendwo. Sonst landet die Frage bei der Zentrale, oft mehrfach.",
+               en: "Partners and their teams have questions every day: “May a helper accept a gift?” The answer is in the handbook, somewhere. Otherwise the question goes to head office, often more than once." },
+    does: { de: "Der Assistent sucht im Handbuch nach Bedeutung und genauen Wörtern, antwortet nur aus den gefundenen Abschnitten und nennt Abschnitt, Verantwortliche und Stand. Code prüft, dass jede Zahl in der Antwort im Abschnitt steht. Steht es nicht im Handbuch, sagt er das und notiert die Frage als Wissenslücke für die Zentrale. Bei Notfall-Wörtern kommt „112 wählen“ immer zuerst, als fester Text ohne KI. Englische Fragen gehen auch. Das Handbuch ist erfunden.",
+            en: "The assistant searches the handbook by meaning and exact words, answers only from the sections it found and names section, owner and date. Code checks that every number in the answer is in the section. If the handbook doesn't cover it, it says so and logs the question as a knowledge gap for head office. With emergency words, “call 112” always comes first, as fixed text without AI. English questions work too. The handbook is invented." },
+    flow: [["code", { de: "Notfall-Wörter? → zuerst 112", en: "Emergency words? → 112 first" }], ["code", { de: "Suche: Bedeutung + genaue Wörter", en: "Search: meaning + exact words" }],
+           ["ai", { de: "antwortet nur aus den Abschnitten", en: "answers only from the sections" }], ["code", { de: "prüft Quellen und Zahlen", en: "checks sources and numbers" }],
+           ["human", { de: "Zentrale schließt Wissenslücken", en: "head office closes knowledge gaps" }]],
+    metrics: [["14/15", { de: "Abschlusstest (93 %), nie daran nachgebessert", en: "final test (93%), never tuned on" }],
+              ["3/3", { de: "Fragen ohne Antwort im Handbuch richtig abgelehnt", en: "questions not in the handbook correctly refused" }],
+              ["8/10", { de: "englische Fragen blind, 10/10 nach Fachbegriff-Liste", en: "English questions blind, 10/10 after a glossary" }]],
+    fixes: [
+      [{ de: "„Versicherung“ fand „Betriebshaftpflichtversicherung“ nicht.", en: "“Versicherung” (insurance) didn't find the long compound word for liability insurance." },
+       { de: "Die Wortsuche versteht jetzt zusammengesetzte Wörter, in beide Richtungen.", en: "Word search now understands compound words, both ways." }],
+      [{ de: "Die KI entschied „nicht gefunden“, bevor sie die Antwort schrieb, obwohl der richtige Abschnitt oben stand.", en: "The AI decided “not found” before writing the answer, although the right section was at the top." },
+       { de: "Reihenfolge im Antwort-Formular umgedreht: erst antworten, dann entscheiden.", en: "Field order reversed: answer first, decide last." }],
+      [{ de: "Ein Beispiel im Prompt führte zur Ein-Wort-Antwort „verboten“, ohne die 10-Euro-Ausnahme.", en: "An example in the prompt led to the one-word answer “verboten” (forbidden), without the 10-euro exception." },
+       { de: "Beispiel umformuliert; zu kurze Antworten zeigen stattdessen den Handbuch-Abschnitt.", en: "Example reworded; answers that are too short show the handbook section instead." }],
+      [{ de: "Englische Fragen fanden die deutschen Abschnitte schlecht (6/10).", en: "English questions found the German sections poorly (6/10)." },
+       { de: "Übersetzung für die Suche mit kurzer Fachbegriff-Liste: 8/10 blind, 10/10 danach.", en: "Translation for the search with a short glossary: 8/10 blind, 10/10 after." }]],
+    shots: [["p4_answer_with_source.jpg", { de: "Antwort mit Quelle und Originaltext", en: "Answer with source and original text" }], ["p4_not_in_handbook.jpg", { de: "Nicht im Handbuch: ehrlich gesagt und notiert", en: "Not in the handbook: said openly and logged" }],
+            ["p4_knowledge_gaps.jpg", { de: "Wissenslücken für die Zentrale", en: "Knowledge gaps for head office" }], ["n8n_D_handbook_chat.jpg", { de: "Als Chat in n8n", en: "As a chat in n8n" }]],
+  },
+  {
+    id: "onboarding", folder: "partner-onboarding", cover: "p5_overview.jpg", clip: "p5_onboarding_update_approval.gif",
+    story: { de: "Onboarding", en: "Onboarding" },
+    title: { de: "Onboarding-Cockpit", en: "Onboarding cockpit" },
+    teaser: { de: "Die ersten 90 Tage neuer Partner, mit Ampel und Freigabe", en: "New partners' first 90 days, with traffic light and approval" },
+    badge: "8/10",
+    tags: ["Python", "FastAPI", "Ollama · qwen2.5:3b", "SQLite", "Streamlit", "n8n", "Telegram"],
+    problem: { de: "Neue Partner haben 90 Tage vom Vertrag bis zu den ersten zehn Kunden: Gewerbe, Versicherung, Schulung, Zulassung (4–8 Wochen bei der Behörde), Büro, erste Helfer. Heute laufen dafür E-Mails, Telefonate und eine Tabelle, und Probleme fallen spät auf.",
+               en: "New partners have 90 days from contract to their first ten customers: registration, insurance, training, the permit (4–8 weeks at the authority), an office, the first helpers. Today that runs on emails, phone calls and a spreadsheet, and problems show up late." },
+    does: { de: "Jeder Partner hat die Checkliste aus dem Handbuch mit Ampel. Partner schreiben weiter normale E-Mails; daraus wird ein Änderungsvorschlag mit dem Satz, auf dem er beruht. Ein Mensch gibt frei, alles steht im Protokoll. Risiken rechnet nur Code, zum Beispiel „Kundeneinsätze laufen, aber die Zulassung fehlt“ oder wann die Zulassung frühestens kommt (Antrag + 4–8 Wochen).",
+            en: "Every partner has the handbook's checklist with a traffic light. Partners keep writing normal emails; each one becomes a change proposal with the sentence it is based on. A person approves, everything is logged. Only code calculates risks, for example “customer visits are running but the permit is missing” or when the permit can arrive at the earliest (application + 4–8 weeks)." },
+    flow: [["tool", { de: "E-Mail des Partners → n8n", en: "Partner email → n8n" }], ["code", { de: "findet Checklisten-Punkte, klare Wörter entscheiden", en: "finds checklist tasks; clear words decide" }],
+           ["ai", { de: "beurteilt nur unklare Sätze", en: "judges only unclear sentences" }], ["human", { de: "gibt Vorschlag frei", en: "approves the proposal" }],
+           ["code", { de: "Ampel, Prognose, Telegram um 8:30", en: "traffic light, forecast, Telegram at 8:30" }]],
+    metrics: [["8/10", { de: "Nachrichten richtig im letzten Blindtest", en: "messages right in the last blind test" }],
+              ["0", { de: "fälschlich als erledigt markiert, in allen Blindtests", en: "wrongly marked done, in all blind tests" }],
+              ["8", { de: "erfundene Partner an Tag 8 bis 96", en: "invented partners on day 8 to 96" }]],
+    fixes: [
+      [{ de: "Version 1 ließ die KI die ganze Nachricht lesen: nur 7 von 15 Updates gefunden.", en: "Version 1 let the AI read the whole message: only 7 of 15 updates found." },
+       { de: "Code findet die Checklisten-Punkte, die KI beurteilt jeweils nur einen Satz.", en: "Code finds the checklist tasks, the AI judges one sentence at a time." }],
+      [{ de: "„Werbung“ steckte in „Bewerbungen“, „UG“ in „Führungszeugnis“.", en: "“Werbung” (advertising) hid inside “Bewerbungen” (job applications), “UG” inside “Führungszeugnis”." },
+       { de: "Regeln für kurze Wörter: nur ganze Wörter oder Wortanfänge.", en: "Rules for short words: whole words or word starts only." }],
+      [{ de: "Eine Prompt-Änderung machte es schlechter: 6 von 10 in einem neuen Blindtest.", en: "A prompt change made it worse: 6 of 10 on a fresh blind test." },
+       { de: "Zurückgenommen. Klare Formulierungen entscheiden jetzt Regeln, die KI nur den Rest.", en: "Reverted. Clear wording is now decided by rules, the AI only the rest." }],
+      [{ de: "Die KI hielt „Die Startschulung machen wir im Dezember“ für erledigt.", en: "The AI took “We'll do the training in December” as done." },
+       { de: "„Erledigt“ nur, wenn der Satz von Vergangenem oder einem Zustand spricht.", en: "“Done” only when the sentence reports the past or a state." }]],
+    shots: [["p5_overview.jpg", { de: "Alle Partner mit Ampel", en: "All partners with traffic light" }], ["p5_partner_detail.jpg", { de: "Ein Partner: Checkliste nach Phasen", en: "One partner: checklist by phase" }],
+            ["p5_proposal.jpg", { de: "Vorschlag mit Warnung und Beleg", en: "Proposal with warning and evidence" }], ["p5_audit_log.jpg", { de: "Protokoll jeder Änderung", en: "Log of every change" }],
+            ["n8n_E_onboarding.jpg", { de: "n8n-Workflow E", en: "n8n workflow E" }]],
+  },
+];
+
+const MAP = [
+  [{ de: "Manuelle Aufgaben ersetzen", en: "Replace manual tasks" }, { de: "Anfragen sortieren und beantworten (<a href=\"#intake\">Anfragen</a>), Partner-Updates einpflegen (<a href=\"#onboarding\">Onboarding</a>), Montagsbericht (<a href=\"#analytics\">Zahlen</a>)", en: "Sorting and answering requests (<a href=\"#intake\">Requests</a>), entering partner updates (<a href=\"#onboarding\">Onboarding</a>), the Monday report (<a href=\"#analytics\">Numbers</a>)" }],
+  [{ de: "KI-Agenten", en: "AI agents" }, { de: "Agent mit vier Werkzeugen und höchstens vier Schritten (<a href=\"#intake\">Anfragen</a>); Assistent, der nur mit Quelle antwortet (<a href=\"#handbook\">Handbuch</a>)", en: "Agent with four tools and at most four steps (<a href=\"#intake\">Requests</a>); an assistant that only answers with sources (<a href=\"#handbook\">Handbook</a>)" }],
+  [{ de: "Workflows, APIs, Webhooks", en: "Workflows, APIs, webhooks" }, { de: "Fünf n8n-Workflows mit Webhooks, Zeitplänen und Chat; vier eigene FastAPI-Schnittstellen (<a href=\"#n8n\">n8n</a>)", en: "Five n8n workflows with webhooks, schedules and chat; four FastAPI interfaces of my own (<a href=\"#n8n\">n8n</a>)" }],
+  [{ de: "Interne Tools und Dashboards", en: "Internal tools and dashboards" }, { de: "Vier deutsche Dashboards mit Freigabe, Protokoll und „So wurde gerechnet“", en: "Four German dashboards with approval, log and “how it was calculated”" }],
+  [{ de: "n8n, Make oder Zapier", en: "n8n, Make or Zapier" }, { de: "n8n selbst gehostet in Docker. Make und Zapier folgen demselben Prinzip.", en: "n8n self-hosted in Docker. Make and Zapier follow the same idea." }],
+  [{ de: "Datenschutz und Nachvollziehbarkeit", en: "Data protection and traceability" }, { de: "Alles lokal, jede Änderung mit Person, Zeit und Beleg im Protokoll, keine Namen in Zusammenfassungen", en: "Everything local, every change logged with person, time and evidence, no names in summaries" }],
+  [{ de: "Pragmatische Lösungen", en: "Pragmatic solutions" }, { de: "Regeln, wo Regeln reichen; ein kleines Modell, das auf einem Laptop läuft; Fehler offen benannt", en: "Rules where rules are enough; a small model that runs on a laptop; mistakes named openly" }],
+  [{ de: "Mit nicht-technischen Kolleginnen und Kollegen arbeiten", en: "Working with non-technical colleagues" }, { de: "Oberflächen auf Deutsch, Ampeln statt Tabellen, Erklärungen in einfacher Sprache", en: "Interfaces in German, traffic lights instead of tables, explanations in plain language" }],
+  [{ de: "Projekte auf GitHub", en: "Projects on GitHub" }, { de: "<a href=\"https://github.com/LomadaDharmateja/homecare-demo\" target=\"_blank\" rel=\"noopener\">homecare-demo</a>, mit Tests und Berichten zu jedem Projekt", en: "<a href=\"https://github.com/LomadaDharmateja/homecare-demo\" target=\"_blank\" rel=\"noopener\">homecare-demo</a>, with tests and reports for every project" }],
+];
+
+const IDEAS = [
+  { title: { de: "Telefon-Assistent für Erstanfragen", en: "Phone assistant for first enquiries" },
+    what: { de: "Nimmt abends und am Wochenende Anrufe an, sagt offen, dass er eine KI ist, nimmt das Anliegen auf und legt eine Anfrage an wie der Anfragen-Assistent. Er sagt nichts zu; Rückruf am nächsten Morgen.", en: "Takes calls in the evening and at weekends, says openly that it is an AI, records the request and creates it like the request assistant. It promises nothing; callback next morning." },
+    tools: { de: "Spracherkennung lokal (Whisper), Intake-API, n8n", en: "Local speech recognition (Whisper), intake API, n8n" },
+    value: { de: "Keine verpassten Anrufe außerhalb der Bürozeiten", en: "No missed calls outside office hours" },
+    effort: { de: "mittel, etwa 4–6 Wochen Pilot", en: "medium, about a 4–6 week pilot" } },
+  { title: { de: "Website-Chat für Angehörige", en: "Website chat for relatives" },
+    what: { de: "Beantwortet Fragen zu Leistungen und Ablauf nur aus freigegebenen Texten, wie der Handbuch-Assistent, und übergibt an einen Menschen, sobald es konkret wird.", en: "Answers questions about services and process only from approved texts, like the handbook assistant, and hands over to a person as soon as it gets specific." },
+    tools: { de: "Handbuch-Suche, n8n-Chat, Anfragen-API", en: "Handbook search, n8n chat, request API" },
+    value: { de: "Schnelle Antworten rund um die Uhr, weniger Standardfragen im Büro", en: "Quick answers around the clock, fewer standard questions in the office" },
+    effort: { de: "klein bis mittel, die Bausteine gibt es", en: "small to medium, the building blocks exist" } },
+  { title: { de: "Wissens-Assistent für Zentrale und Partner", en: "Knowledge assistant for head office and partners" },
+    what: { de: "Der Handbuch-Assistent für alle Dokumente: Verträge, Schulungen, Rundschreiben. Mit Rechten je Rolle und einem monatlichen Bericht über Wissenslücken.", en: "The handbook assistant for all documents: contracts, trainings, circulars. With rights per role and a monthly report on knowledge gaps." },
+    tools: { de: "Hybrid-Suche, lokales Modell, Anbindung an die Dokumentenablage", en: "Hybrid search, local model, connection to the document store" },
+    value: { de: "Weniger Rückfragen an die Zentrale, schnellere neue Partner", en: "Fewer questions to head office, faster new partners" },
+    effort: { de: "mittel, abhängig von der Dokumentenablage", en: "medium, depends on the document store" } },
+];
+
+function renderHome() {
+  document.getElementById("stories").innerHTML = PROJECTS.map((p) =>
+    `<button class="story" type="button" data-story="${p.id}"><span class="ring"><img src="assets/${p.cover}" alt="" loading="lazy"></span><span>${t(p.story)}</span></button>`).join("");
+  document.getElementById("posts").innerHTML = PROJECTS.map((p) =>
+    `<a class="post" href="#${p.id}"><span class="shot"><img src="assets/${p.cover}" alt="" loading="lazy"></span><span class="badge">${p.badge}</span>
+      <span class="cap"><b>${t(p.title)}</b><small>${t(p.teaser)}</small><span class="more">${t({ de: "Projekt ansehen →", en: "Open project →" })}</span></span></a>`).join("") +
+    `<a class="post text" href="#ideen"><span class="cap"><span class="eyebrow">${t({ de: "Als Nächstes", en: "Next" })}</span>
+      <b>${t({ de: "Ideen, 90-Tage-Plan, Arbeitsweise", en: "Ideas, 90-day plan, how I work" })}</b><small>${t({ de: "Was ich bei HOMECARE angehen würde", en: "What I would take on at HOMECARE" })}</small>
+      <span class="more">${t({ de: "Weiterlesen →", en: "Read on →" })}</span></span></a>`;
+  document.getElementById("map").innerHTML = MAP.map(([a, b]) =>
+    `<div class="map-row"><div class="ask">${t(a)}</div><div class="proof">${t(b)}</div></div>`).join("");
+  document.getElementById("ideas").innerHTML = IDEAS.map((i) =>
+    `<article class="idea"><h3>${t(i.title)}</h3>${tp(i.what)}<dl>
+      <div><dt>${t({ de: "Werkzeuge", en: "Tools" })}</dt><dd>${t(i.tools)}</dd></div>
+      <div><dt>${t({ de: "Nutzen", en: "Value" })}</dt><dd>${t(i.value)}</dd></div>
+      <div><dt>${t({ de: "Aufwand", en: "Effort" })}</dt><dd>${t(i.effort)}</dd></div></dl></article>`).join("");
+}
+
+function renderProject(p) {
+  const i = PROJECTS.indexOf(p);
+  const prev = PROJECTS[(i + PROJECTS.length - 1) % PROJECTS.length], next = PROJECTS[(i + 1) % PROJECTS.length];
+  const clip = p.clip.endsWith(".gif")
+    ? `<figure class="media"><img src="assets/${p.clip}" alt="" loading="lazy"><figcaption>${t({ de: "Aufnahme der laufenden Demo auf dem Laptop (erfundene Daten)", en: "Recording of the running demo on the laptop (invented data)" })}</figcaption></figure>`
+    : `<figure class="media"><img src="assets/${p.clip}" alt="" loading="lazy"><figcaption>${t({ de: "Die Workflows in n8n", en: "The workflows in n8n" })}</figcaption></figure>`;
+  document.getElementById("project").innerHTML = `
+    <a class="back" href="#projekte">← ${t({ de: "Alle Projekte", en: "All projects" })}</a>
+    <div class="p-head"><p class="eyebrow">${t({ de: "Projekt", en: "Project" })} ${i + 1} / ${PROJECTS.length}</p><h1>${t(p.title)}</h1>
+      <div class="tags">${p.tags.map((x) => `<span class="tag">${x}</span>`).join("")}</div></div>
+    <div class="two"><div style="display:grid;gap:18px"><div style="display:grid;gap:8px"><h3>${t({ de: "Das Problem", en: "The problem" })}</h3>${tp(p.problem)}</div>
+      <div style="display:grid;gap:8px"><h3>${t({ de: "Was es macht", en: "What it does" })}</h3>${tp(p.does)}</div></div>${clip}</div>
+    <div style="display:grid;gap:12px"><h3>${t({ de: "So läuft es ab", en: "How it runs" })}</h3>
+      <div class="flow">${p.flow.map(([w, s], k) => `${k ? '<span class="arrow" aria-hidden="true">→</span>' : ""}<div class="step"><span class="who-does who-${w}">${t(WHO[w])}</span>${t(s)}</div>`).join("")}</div>
+      <div class="legend"><span class="who-ai">■ ${t({ de: "KI versteht", en: "AI understands" })}</span><span class="who-code">■ ${t({ de: "Code prüft und rechnet", en: "Code checks and calculates" })}</span><span class="who-human">■ ${t({ de: "Mensch entscheidet", en: "Person decides" })}</span></div></div>
+    <div style="display:grid;gap:12px"><h3>${t({ de: "Ergebnisse", en: "Results" })}</h3>
+      <div class="metrics">${p.metrics.map(([n, l]) => `<div class="metric"><b>${n}</b><span>${t(l)}</span></div>`).join("")}</div>
+      <p class="note">${t({ de: "Testfälle vor dem Bauen geschrieben; „blind“ heißt: ausgewertet, bevor ich etwas daran angepasst habe. Details im Bericht auf GitHub.", en: "Test cases written before building; “blind” means scored before I changed anything because of them. Details in the report on GitHub." })}</p></div>
+    <div style="display:grid;gap:12px"><h3>${t({ de: "Was schiefging, und was ich geändert habe", en: "What went wrong, and what I changed" })}</h3>
+      <div class="fixes">${p.fixes.map(([a, b]) => `<div class="fix"><span class="was">${t(a)}</span><span class="now">${t(b)}</span></div>`).join("")}</div></div>
+    <div style="display:grid;gap:12px"><h3>${t({ de: "Bilder", en: "Screens" })}</h3>
+      <div class="carousel">${p.shots.map(([f, c]) => `<figure class="media"><img src="assets/${f}" alt="" loading="lazy"><figcaption>${t(c)}</figcaption></figure>`).join("")}</div></div>
+    <p><a class="btn" href="${REPO}${p.folder}" target="_blank" rel="noopener">${t({ de: "Code und Testbericht auf GitHub", en: "Code and test report on GitHub" })} ↗</a></p>
+    <nav class="pager"><a href="#${prev.id}">← ${t(prev.title)}</a><a href="#${next.id}">${t(next.title)} →</a></nav>`;
+}
+
+function route() {
+  const id = location.hash.slice(1);
+  const p = PROJECTS.find((x) => x.id === id);
+  document.querySelector('[data-view="home"]').hidden = !!p;
+  document.getElementById("project").hidden = !p;
+  if (p) { renderProject(p); window.scrollTo(0, 0); }
+  else if (id) { const el = document.getElementById(id); if (el) el.scrollIntoView(); }
+}
+
+function setLang(lang) {
+  document.documentElement.dataset.lang = lang;
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-set-lang]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.setLang === lang)));
+  try { localStorage.setItem("lang", lang); } catch (e) { /* storage blocked: the switch still works */ }
+}
+
+let saved = null;
+try { saved = localStorage.getItem("lang"); } catch (e) { saved = null; }
+setLang(saved || ((navigator.language || "de").toLowerCase().startsWith("de") ? "de" : "en"));
+document.querySelectorAll("[data-set-lang]").forEach((b) => b.addEventListener("click", () => setLang(b.dataset.setLang)));
+
+renderHome();
+route();
+window.addEventListener("hashchange", route);
+
+const viewer = document.getElementById("viewer");
+document.getElementById("stories").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-story]"); if (!b) return;
+  const p = PROJECTS.find((x) => x.id === b.dataset.story);
+  document.getElementById("viewer-title").innerHTML = t(p.title);
+  document.getElementById("viewer-img").src = "assets/" + p.clip;
+  document.getElementById("viewer-cap").innerHTML = t(p.teaser);
+  document.getElementById("viewer-go").href = "#" + p.id;
+  viewer.showModal();
+});
+document.getElementById("viewer-close").addEventListener("click", () => viewer.close());
+document.getElementById("viewer-go").addEventListener("click", () => viewer.close());
+viewer.addEventListener("click", (e) => { if (e.target === viewer) viewer.close(); });
+</script>
+</body>
+</html>
