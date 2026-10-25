@@ -31,6 +31,9 @@ All data is synthetic and everything runs locally, except the optional Telegram 
 the case number, service and city, with no names or health details. See [EXPLAINER.md](EXPLAINER.md) for the full
 walkthrough and [intake-service/eval/report.md](intake-service/eval/report.md) for accuracy.
 
+**Portfolio page (German / English, with demo clips of every project):**
+https://lomadadharmateja.github.io/homecare-demo/
+
 **New here?** Open [`docs/walkthrough.html`](docs/walkthrough.html) in a browser: a plain-language tour that
 follows four real requests through the whole pipeline.
 
