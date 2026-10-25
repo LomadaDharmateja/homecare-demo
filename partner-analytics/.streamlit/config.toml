@@ -1,0 +1,4 @@
+# Light theme: easier to read when sharing the screen, and matches the portfolio.
+[theme]
+base = "light"
+primaryColor = "#0b7a6e"
