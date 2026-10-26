@@ -316,7 +316,7 @@ const API_HANDBOOK = {
 };
 
 const WF_E = {
-  tag: "n8n", title: L("Workflow E: Partner-Updates und Risiken", "Workflow E: Partner updates and risks"), where: "HOMECARE E - Onboarding",
+  tag: "n8n", title: L("Variante mit Python-API · Workflow E: Partner-Updates und Risiken", "Python API version · Workflow E: partner updates and risks"), where: "HOMECARE E - Onboarding",
   nodes: [
     N("wh", 0, 0, "🔗", "n8n", L("Webhook: Partner-Update", "Webhook: partner update"), L("Die E-Mail eines neuen Partners kommt hier an.", "A new partner's email arrives here."),
       '{ "partner_id": 6, "nachricht": "Die Betriebshaftpflicht ist abgeschlossen, aber das Büro ist erst ab dem 15. frei." }', "Webhook"),
@@ -333,7 +333,7 @@ const WF_E = {
 };
 
 const API_ONBOARD = {
-  tag: "api", title: L("Im Block „Lokale API: /updates“", "Inside the block \"Local API: /updates\""), where: "partner-onboarding/app/updates.py · status.py",
+  tag: "api", title: L("Variante mit Python-API · Im Block „Lokale API: /updates“", "Python API version · Inside the block \"Local API: /updates\""), where: "partner-onboarding/app/updates.py · status.py",
   nodes: [
     N("sp", 0, 1, "✂️", "code", L("In Teilsätze zerlegen", "Split into clauses"), L("An Satzende, Komma, Semikolon und „aber“.", "At sentence ends, commas, semicolons and \"but\"."),
       "1) Die Betriebshaftpflicht ist abgeschlossen\n2) aber das Büro ist erst ab dem 15. frei", "updates.py"),
@@ -347,6 +347,88 @@ const API_ONBOARD = {
     N("amp", 6, 1.5, "🚦", "code", L("Ampel (nur Code)", "Traffic light (code only)"), L("Kunden ohne Voraussetzungen · überfällige oder blockierte Punkte · Genehmigung: Antrag + 4–8 Wochen nach Tag 90? · Kundentempo an Tag 61–90.", "Customers without preconditions · overdue or blocked tasks · permit: application + 4–8 weeks after day 90? · customer pace on days 61–90."), "", "status.py"),
   ],
   edges: [["sp", "fi"], ["fi", "cl"], ["cl", "ru", "ja / yes"], ["cl", "ai", "nein / no"], ["ru", "pro"], ["ai", "pro"], ["pro", "hu"], ["hu", "au"], ["hu", "amp"]],
+};
+
+// The same cockpit built only in n8n (partner-onboarding/n8n-native): no Python API.
+const NF2_A = {
+  tag: "n8n", title: L("Nur n8n · F2 Teil 1: Nachricht → Vorschlag", "n8n only · F2 part 1: message → proposal"), where: "HOMECARE F2 · Partner-Update",
+  nodes: [
+    N("wh", 0, 0, "🔗", "n8n", L("Webhook: Partner-Update", "Webhook: partner update"),
+      L("Die Nachricht eines Partners kommt an, z. B. aus dem Formular auf der Cockpit-Seite.", "A partner's message arrives, e.g. from the form on the cockpit page."),
+      'POST /webhook/onboarding-update\n{ "partner_id": 2, "nachricht": "Wir haben schon 3 Kunden! Das Büro ist angemietet,\n  aber mit der Versicherung klappt es leider noch nicht." }', "Webhook"),
+    N("ev", 0, 1.5, "🧪", "n8n", L("Testfälle (Evaluation)", "Test cases (Evaluation)"),
+      L("Zweiter Eingang: n8n Evaluations schickt die 50 Testnachrichten aus einer Data Table durch denselben Ablauf.", "Second entry: n8n Evaluations sends the 50 test messages from a data table through the same flow."), "", "Evaluation Trigger"),
+    N("prep", 1, 0.75, "🧾", "code", L("Eingang vorbereiten", "Prepare input"),
+      L("Egal ob Webhook oder Test: daraus wird immer dasselbe Format (Partner, Nachricht, Datum).", "Webhook or test: it always becomes the same format (partner, message, date)."), "", "Code"),
+    N("ck", 2, 0.75, "🗂️", "data", L("Checkliste laden", "Load checklist"),
+      L("Die 15 Punkte mit ihren Stichwörtern stehen in einer n8n Data Table. Die Zentrale kann sie ohne Code ändern.", "The 15 tasks with their keywords live in an n8n data table. Head office can change them without code."),
+      "haftpflicht: versicherung, haftpflicht, ...\nbuero: büro, mietvertrag, office, ...", "Data Table"),
+    N("ru", 3, 0.75, "📏", "code", L("Regeln: Satzteile und Punkte", "Rules: clauses and tasks"),
+      L("Zerlegt in Teilsätze, findet die Punkte über Stichwörter. Hindernis → blockiert. Plan, Frage, „noch nicht“ → keine Änderung. Klares Wort → erledigt. Nur Unklares in der Vergangenheit wird eine Frage an die KI.", "Splits into clauses, finds the tasks by keywords. Obstacle → blocked. Plan, question, \"not yet\" → no change. Clear word → done. Only unclear past-tense clauses become a question for the AI."),
+      "„Das Büro ist angemietet“ → buero = erledigt (Regel)\n„mit der Versicherung klappt es leider noch nicht“ → haftpflicht = blockiert (Regel)", "Code"),
+    N("if", 4, 0.75, "⑂", "n8n", L("KI nötig?", "AI needed?"),
+      L("Gibt es offene Fragen? Wenn nicht, wird die KI komplett übersprungen. Das ist meistens so.", "Any open questions? If not, the AI is skipped completely. That's the usual case."), "", "IF"),
+    N("ai", 5, 0, "🧠", "ai", L("KI: Ist der Punkt erledigt?", "AI: is the task done?"),
+      L("n8n-eigene KI-Blöcke: Basic LLM Chain + Ollama (qwen2.5:3b, lokal) + Structured Output Parser. Eine kleine Frage pro Teilsatz, Temperatur 0.", "n8n's own AI blocks: Basic LLM Chain + Ollama (qwen2.5:3b, local) + Structured Output Parser. One small question per clause, temperature 0."),
+      '{ "begruendung": "Die Schulung hat stattgefunden.", "erledigt": true }', "Basic LLM Chain + Ollama"),
+    N("pro", 6, 0.75, "📝", "code", L("Vorschlag zusammensetzen", "Build proposal"),
+      L("Regel- und KI-Entscheidungen in der Reihenfolge der Nachricht, jede mit Beleg-Satz. Dazu Kundenzahl und Folgerungen (3 Kunden → erster Einsatz erledigt).", "Rule and AI decisions in message order, each with its evidence sentence. Plus the customer count and follow-on facts (3 customers → first visit done)."), "", "Code"),
+    N("tst", 7, 0.75, "⑂", "n8n", L("Test oder echt?", "Test or real?"),
+      L("Testläufe gehen zum Vergleich, echte Nachrichten weiter zu Teil 2.", "Test runs go to the comparison, real messages continue to part 2."), "", "Evaluation (check if evaluating)"),
+    N("met", 8, 1.5, "📊", "code", L("Mit Erwartung vergleichen", "Compare with expected"),
+      L("Zwei Kennzahlen pro Testfall: korrekt und „fälschlich erledigt“. Ergebnis: 47 von 50 korrekt, 0 fälschlich erledigt.", "Two metrics per test case: correct and \"wrongly done\". Result: 47 of 50 correct, 0 wrongly done."), "korrekt: 1   falsch_erledigt: 0", "Evaluation (set metrics)"),
+    N("nx", 8, 0, "➡️", "n8n", L("Weiter zu Teil 2", "On to part 2"), L("Siehe nächstes Diagramm.", "See the next diagram."), "", ""),
+  ],
+  edges: [["wh", "prep"], ["ev", "prep"], ["prep", "ck"], ["ck", "ru"], ["ru", "if"], ["if", "ai", "ja / yes"], ["if", "pro", "nein / no"], ["ai", "pro"],
+          ["pro", "tst"], ["tst", "nx", "echt / real"], ["tst", "met", "Test / test"]],
+};
+
+const NF2_B = {
+  tag: "n8n", title: L("Nur n8n · F2 Teil 2: Speichern, warten, freigeben", "n8n only · F2 part 2: save, wait, approve"), where: "HOMECARE F2 · Partner-Update",
+  nodes: [
+    N("dry", 0, 1, "⑂", "n8n", L("Nur testen?", "Dry run only?"),
+      L("Mit „nur_testen“ kommt der Vorschlag sofort zurück, ohne etwas zu speichern.", "With \"nur_testen\" the proposal comes straight back, nothing is saved."), "", "IF"),
+    N("dr", 1, 0, "↩️", "n8n", L("Antwort ohne Speichern", "Reply without saving"), L("Für Tests und zum Ausprobieren.", "For tests and trying things out."), "", "Respond to Webhook"),
+    N("ld", 1, 1, "🗂️", "data", L("Partner + Aufgaben laden", "Load partner + tasks"), L("Aktueller Stand aus den Data Tables.", "Current state from the data tables."), "", "Data Table"),
+    N("cmp", 2, 1, "🔎", "code", L("Mit Checkliste abgleichen", "Check against checklist"),
+      L("Was schon so ist, fällt weg. Warnung, wenn Kunden gemeldet werden, aber ein Pflichtpunkt (Versicherung, Zulassung, Führungszeugnisse, Vertragsvorlagen) noch offen ist.", "Drops what is already so. Warns if customers are reported while a must-have (insurance, permit, background checks, contract templates) is still open."),
+      "⚠️ Kunden werden betreut, aber es fehlt: Betriebshaftpflicht, Zulassung …", "Code"),
+    N("kn", 3, 1, "⑂", "n8n", L("Partner bekannt?", "Partner known?"), L("Unbekannte Partner-Nummer → Fehlermeldung, nichts gespeichert.", "Unknown partner number → error message, nothing saved."), "", "IF"),
+    N("e404", 4, 2, "⛔", "n8n", L("Fehler: unbekannt", "Error: unknown"), L("Antwort 404.", "Reply 404."), "", "Respond to Webhook"),
+    N("sv", 4, 1, "🗄️", "data", L("Vorschlag + Protokoll speichern", "Save proposal + log"),
+      L("Der Vorschlag wird gespeichert, Status „offen“. Die Checkliste ändert sich noch nicht.", "The proposal is saved with status \"open\". The checklist does not change yet."), "", "Data Table"),
+    N("rp", 5, 1, "↩️", "n8n", L("Antwort mit Freigabe-Link", "Reply with approval link"),
+      L("Der Absender bekommt sofort den Vorschlag und den Link zum Freigabe-Formular.", "The sender gets the proposal and the link to the approval form right away."),
+      '{ "ok": true, "vorschlag_nr": 7, "aenderungen": [...], "warnungen": [...],\n  "freigabe_url": "http://localhost:5678/webhook-waiting/..." }', "Respond to Webhook"),
+    N("wt", 6, 1, "⏸️", "human", L("Warten auf Freigabe", "Wait for approval"),
+      L("Der Ablauf pausiert, bis ein Mensch im Formular entscheidet. Name ist Pflicht.", "The execution pauses until a person decides in the form. Name is required."),
+      "Ihr Name: ______\nEntscheidung: [Alle Änderungen übernehmen | Ablehnen]", "Wait (On form submitted)"),
+    N("dc", 7, 1, "⑂", "code", L("Entscheidung auswerten", "Evaluate decision"), L("Übernehmen oder ablehnen, mit Name und Zeit.", "Accept or reject, with name and time."), "", "Code"),
+    N("up", 8, 1, "✅", "data", L("Checkliste, Kunden, Protokoll", "Checklist, customers, log"),
+      L("Erst jetzt ändern sich Checkliste und Kundenzahl. Das Protokoll speichert wer, wann, vorher, nachher und den Beleg-Satz.", "Only now do the checklist and customer count change. The log stores who, when, before, after and the evidence sentence."), "", "Data Table"),
+  ],
+  edges: [["dry", "dr", "ja / yes"], ["dry", "ld", "nein / no"], ["ld", "cmp"], ["cmp", "kn"], ["kn", "sv", "ja / yes"], ["kn", "e404", "nein / no"],
+          ["sv", "rp"], ["rp", "wt"], ["wt", "dc"], ["dc", "up"]],
+};
+
+const NF_REST = {
+  tag: "n8n", title: L("Nur n8n · F1, F3, F4, F5: Einrichtung, Ampel, Bericht, Cockpit", "n8n only · F1, F3, F4, F5: setup, traffic light, report, cockpit"), where: "HOMECARE F1 · F3 · F4 · F5",
+  nodes: [
+    N("f1", 0, 0, "👆", "n8n", L("F1: Einrichtung", "F1: setup"), L("Per Klick oder Webhook. Vor einer Demo ausführen: Partner-Tage zählen ab heute.", "By click or webhook. Run before a demo: partner days count from today."), "POST /webhook/onboarding-einrichtung", "Manual Trigger + Webhook"),
+    N("tb", 1, 0, "🗂️", "data", L("6 Data Tables füllen", "Fill 6 data tables"),
+      L("Checkliste (15 Punkte), 8 erfundene Partner, ihre Aufgaben, Vorschläge, Protokoll, 50 Testfälle.", "Checklist (15 tasks), 8 invented partners, their tasks, proposals, audit log, 50 test cases."), "", "Data Table"),
+    N("f5", 0, 1.2, "🔗", "n8n", L("F5: Cockpit-Seite", "F5: cockpit page"), L("Eine Web-Adresse, die n8n selbst beantwortet. Keine eigene App.", "A web address n8n answers itself. No separate app."), "GET /webhook/onboarding-cockpit", "Webhook"),
+    N("a5", 1, 1.2, "🚦", "code", L("F3: Ampel berechnen", "F3: traffic light"),
+      L("Unter-Workflow, nur Regeln: Kunden ohne Voraussetzungen, überfällige oder blockierte Punkte, Zulassung (Antrag + 4–8 Wochen) nach Tag 90?, Kundentempo.", "Sub-workflow, rules only: customers without preconditions, overdue or blocked tasks, permit (application + 4–8 weeks) after day 90?, customer pace."),
+      "🔴 Essen (Tag 26): Kundeneinsätze laufen, aber Voraussetzungen fehlen …", "Execute Workflow → F3"),
+    N("pg", 2, 1.2, "🖥️", "code", L("Seite bauen", "Build page"), L("Ampel, offene Vorschläge mit Freigabe-Knopf, Formular für neue Updates, Protokoll.", "Traffic lights, open proposals with approve button, form for new updates, audit log."), "", "Code"),
+    N("ht", 3, 1.2, "↩️", "n8n", L("HTML ausliefern", "Serve HTML"), L("Der Browser zeigt das Cockpit.", "The browser shows the cockpit."), "", "Respond to Webhook"),
+    N("f4", 0, 2.4, "⏰", "n8n", L("F4: Mo–Fr 08:30", "F4: Mon–Fri 08:30"), L("Morgen-Bericht, auch per Klick.", "Morning report, also by click."), "cron: 30 8 * * 1-5", "Schedule Trigger"),
+    N("a4", 1, 2.4, "🚦", "code", L("F3: Ampel berechnen", "F3: traffic light"), L("Derselbe Unter-Workflow wie oben.", "The same sub-workflow as above."), "", "Execute Workflow → F3"),
+    N("tg", 2, 2.4, "✈️", "n8n", L("Telegram: Risiken", "Telegram: risks"), L("Rote und orange Partner, offene Freigaben. Keine Namen.", "Red and orange partners, pending approvals. No names."),
+      "🧭 Onboarding neuer Partner: 2 kritisch, 4 mit Hinweis\n🔴 Lübeck (Tag 71): …", "Telegram"),
+  ],
+  edges: [["f1", "tb"], ["f5", "a5"], ["a5", "pg"], ["pg", "ht"], ["f4", "a4"], ["a4", "tg"]],
 };
 
 const PROJECTS = [
@@ -367,9 +449,9 @@ const PROJECTS = [
            "\"Partners ask the handbook instead of head office. Answers come only from the handbook, with the source. If it's not in there, it says so and collects it as a knowledge gap.\""),
     boards: [WF_D, API_HANDBOOK] },
   { id: "onboarding", tab: L("5 Onboarding", "5 Onboarding"), name: L("Projekt 5: Onboarding-Cockpit", "Project 5: Onboarding cockpit"),
-    say: L("„Neue Partner schreiben einfach E-Mails. Das System macht daraus Vorschläge für die Checkliste, ein Mensch gibt frei. Die Ampel rechnet nur Code.“",
-           "\"New partners just write emails. The system turns them into proposals for the checklist, and a person approves. Only code calculates the traffic light.\""),
-    boards: [WF_E, API_ONBOARD] },
+    say: L("„Neue Partner schreiben einfach E-Mails. Das System macht daraus Vorschläge für die Checkliste, ein Mensch gibt frei. Die Ampel rechnet nur Code. Ich habe es zweimal gebaut: komplett in n8n (die ersten drei Diagramme) und mit einer Python-API (die letzten zwei). Beide liefern dieselben Ergebnisse.“",
+           "\"New partners just write emails. The system turns them into proposals for the checklist, and a person approves. Only code calculates the traffic light. I built it twice: entirely in n8n (the first three diagrams) and with a Python API (the last two). Both give the same results.\""),
+    boards: [NF2_A, NF2_B, NF_REST, WF_E, API_ONBOARD] },
 ];
 
 // ---------- rendering ----------
