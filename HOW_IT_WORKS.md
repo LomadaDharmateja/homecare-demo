@@ -20,8 +20,55 @@ possible, and puts a code check right after it.
 
 ## Project 1: Customer intake (`intake-service/`)
 
-**Problem:** customer requests arrive by web form or email as free text. Someone has to read each one, find out
-what is needed, decide what is urgent and write a reply.
+### The case for it
+
+**The problem today:** customer requests arrive by web form and email, written freely by elderly people or
+their relatives, in German or English, with typos, long stories and missing details. Every request has to be:
+read, sorted (what kind of help, which city, which day), checked for what is missing, ranked by urgency, and
+answered. This is done by hand, so:
+- an urgent case ("my father fell") sent on a Sunday evening can sit in the inbox until Monday morning;
+- staff spend time on reading and typing instead of on customers;
+- callbacks get forgotten, because nobody sees which ones are overdue;
+- there is no record of who decided what and why.
+
+**How it is solved:** every request goes through the same automatic first pass in a few seconds. The AI reads
+the text and fills a form; code checks the form, sets the priority and writes a reply draft. Urgent cases go
+to the team's phone on Telegram at once. Staff open one dashboard with a sorted list and a draft ready for
+each case: they read, fix if needed, approve. Every morning, a list of overdue callbacks is created
+automatically.
+
+**What gets automated:** reading, sorting, the missing-information check, prioritising, the first reply draft,
+the urgent alert, the CSV log and the overdue reminder. **What stays human:** the approval of every reply,
+and the actual care decisions.
+
+**End-to-end example:**
+> Sunday, 21:40, web form: *"Mein Vater ist gestürzt und kommt nicht hoch. Kann heute Abend jemand in Siegen
+> bei ihm bleiben? Bitte rufen Sie mich sofort zurück."*
+1. n8n receives it and calls the API; the form gets "received" back immediately.
+2. AI reads it: companionship, "heute Abend", Siegen, callback yes.
+3. Code checks: "heute Abend" and "Siegen" are in the text ✓, "rufen … zurück" is a call word ✓.
+4. Emergency words "gestürzt", "kommt nicht hoch" → **priority 1**, whatever the AI said.
+5. Draft (German, by code): "…Wir behandeln Ihre Anfrage vorrangig. Bei einem medizinischen Notfall rufen
+   Sie bitte sofort 112 an. Eine Kollegin oder ein Kollege ruft Sie zurück."
+6. Telegram to the team: "HOMECARE: urgent request #12, Service: companionship, City: Siegen, Callback
+   requested: yes. Details and draft reply: open the dashboard." (only minimal data, no name or full text)
+7. A colleague calls back within minutes, then approves the draft in the dashboard. All steps are in the log.
+
+**Why use AI here, and not plain automation?** Plain automation (n8n alone, keyword rules, a strict form)
+needs structured input. Customers do not write structured input: "Mama", "my mum", "meine Mutter";
+"Monday at half nine", "Mo. 9:30", "übermorgen"; cities with typos. Covering all of that with rules never ends,
+and a strict form with ten required fields scares off exactly the elderly customers HOMECARE serves. An LLM
+reads free text in any wording and language. **But an LLM alone is not trusted either:** it sometimes invents
+a date or a city. So the AI only *reads*; code *checks and decides*; a person *approves*.
+
+**Why an agent?** An agent means the model chooses *which step to run next* from a list of tools, instead of
+following a fixed order. Here it shows the pattern a growing intake system needs: the model chooses, code
+runs only whitelisted tools, every decision is logged, and guardrails force the steps that must always run.
+To be honest: for today's 4 tools the order is almost always the same, so a fixed pipeline would work too,
+and the guardrails make sure the result is the same either way. The agent becomes really useful when more
+tools are added whose use depends on the case: for example "look up existing customer", "check helper
+availability in that city", "translate", "ask for missing details" — steps that some requests need and others
+do not. Then the model picks what this request needs, and the same safety rules still apply.
 
 **The chain:** n8n webhook → `POST /intake` → save → agent loop (4 tools) → record + audit log → person approves
 the reply in the dashboard. In parallel, n8n sends a Telegram alert for urgent cases and writes a CSV line.
@@ -177,8 +224,42 @@ The first version scored 54 %. Better code checks raised it to 90 %, not a bigge
 
 ## Project 2: Partner analytics (`partner-analytics/`)
 
-**Problem:** head office asks questions about 55 franchise locations ("Which 5 locations lost the most
-customers?"). Normally someone builds an Excel sheet for every question.
+### The case for it
+
+**The problem today:** HOMECARE has many franchise locations, each reporting monthly numbers (revenue, costs,
+customers, cash). Management has questions like "Which locations lost customers?", "Is anyone running out of
+cash?", "Do partners who start with a friend grow faster?". Today someone exports data and builds an Excel
+sheet for each question, which takes hours or days, so many questions are never asked. Problems (a location
+burning cash) are noticed late, when someone happens to look.
+
+**How it is solved:** two parts.
+1. **Ask in plain words:** management types the question in German or English and gets the answer in seconds,
+   with the table and a line saying exactly what was calculated.
+2. **Weekly report without asking:** every Monday at 08:00, n8n triggers a check of all locations. Rules find
+   the problems, the report arrives on Telegram and as a file, most urgent location first.
+
+**What gets automated:** turning a question into a calculation, the calculation itself, and the weekly
+check of every location. **What stays human:** deciding what to do about a struggling partner.
+
+**End-to-end example:**
+> "Welche 5 Standorte haben in den letzten 6 Monaten die meisten Kunden verloren?"
+1. AI fills the form: metric customers, by location, last 6 months, growth yes, sort ascending, limit 5.
+2. Code checks the form: "verloren" → sort ascending ✓, "5 Standorte" → limit 5 ✓.
+3. Pandas compares the last 6 months with the 6 before, for every location.
+4. Code writes: "Kunden: Stärkster Rückgang: Standort A −18,2 %, danach …" plus the table and
+   "computed as: Kunden, nach Standort, letzte 6 Monate, Veränderung zum Zeitraum davor".
+
+**Why use AI here, and not plain automation?** A dashboard with fixed charts only answers the questions
+someone thought of in advance. Every new question would need a developer or an analyst. The AI turns any
+wording ("lost the most", "größter Rückgang", "worst 5") into the same form. **Why not let the AI calculate or
+write SQL?** Language models are bad at arithmetic and can write wrong queries that *look* right; a wrong
+number in a management meeting destroys trust. So the AI only fills a form from fixed lists, and Python
+calculates. A correct form always gives a correct number.
+
+**Why not an agent?** The steps are always the same: understand the question → calculate → write the
+answer. When the order never changes, a fixed pipeline is simpler, faster and easier to test. Knowing when
+*not* to use an agent is part of the job. An agent would make sense if questions needed several different
+lookups chained together ("compare the worst locations with their marketing spend and staff turnover").
 
 **The chain:** question → 🟧 AI fills a query form → 🟩 code corrects the form → 🟩 pandas calculates →
 🟩 code writes the answer sentence → table + "computed as" shown under it.
@@ -240,8 +321,40 @@ Final test 14/15, German test 10/10. "Correct" means every field of the form is 
 
 ## Project 3: Partner handbook assistant (`partner-handbook/`)
 
-**Problem:** franchise partners ask head office the same questions again and again ("When do I bill the care
-insurance?"). The answer is in the handbook, but nobody finds it.
+### The case for it
+
+**The problem today:** franchise partners and their staff have questions every day: "By when do I bill the
+care insurance?", "May a helper accept a gift?", "What do I do if a customer doesn't open the door?". The
+answers are in a long partner handbook, but nobody reads 10 chapters to find one sentence. So they call or
+email head office. Head office answers the same questions again and again, answers differ depending on who
+picks up, and nobody knows which topics the handbook explains badly.
+
+**How it is solved:** a chat assistant that answers **only from the handbook**, in 1–3 sentences, always
+with the chapter and section as the source. If the handbook does not cover it, it says so and logs the
+question, so head office sees which topics are missing. Emergency questions get "call 112" first, from a
+fixed text.
+
+**What gets automated:** finding the right section, writing a short answer, and collecting the gaps in the
+handbook. **What stays human:** head office answers what the handbook does not cover, and keeps the handbook
+up to date.
+
+**End-to-end example:**
+> Partner: "Darf eine Alltagshelferin ein Geschenk von einer Kundin annehmen?"
+1. Search (meaning + exact words) finds the section *Personal – Geschenke* and 4 others.
+2. AI answers only from these: "Nein, … ausgenommen kleine Aufmerksamkeiten bis zu 10 Euro." Source: [2].
+3. Code checks: source [2] exists ✓, the number 10 is in that section ✓, long enough ✓.
+4. Partner sees the answer + "Quelle: 05_personal.md – Geschenke, Stand …".
+
+**Why use AI here, and not plain automation?** A keyword search returns whole documents, not answers, and
+fails when the partner uses other words than the handbook ("present" vs "Aufmerksamkeit"). A classic FAQ bot
+needs every question written down in advance. The AI understands the question in any wording or language and
+writes a short answer. **Why not just ChatGPT?** A general chatbot answers from general knowledge and invents
+rules that are not HOMECARE's. And the handbook would leave the company. Here the model runs locally, only
+sees the found sections, must cite them, and code checks every number against the source.
+
+**Why not an agent?** The steps are always the same (search → answer → check). This is "RAG": retrieval
+followed by generation. An agent would make sense if the assistant also had to look things up elsewhere, for
+example in the partner's own data ("How many hours did my team work this month?").
 
 **The chain:** question → 🟩 emergency check → (English? 🟧 translate) → 🟩 search → 🟧 AI answers only from
 the found sections → 🟩 check → answer with source, or "not in the handbook" + log.
@@ -295,6 +408,28 @@ Final test 14/15, English test 10/10. The "not in handbook" questions were corre
 
 ## Project 4: n8n workflows (`n8n/` + each project's `n8n/` folder)
 
+### The case for it
+
+**The problem today:** even when the logic exists, someone must *start* it and *move the results* to people:
+check overdue callbacks every morning, send the weekly report every Monday, forward an urgent case to the
+on-call phone at night, copy every request into a list. Done by hand, this is forgotten on busy days, and
+every new connection (a new form, email, Telegram) means custom code that only a developer understands.
+
+**How it is solved:** n8n workflows connect triggers (a form is sent, it is 08:00, a chat message arrives) to
+the local APIs and to where people work (Telegram, files). Each workflow is a visible chain of blocks.
+
+**End-to-end example:** Monday 08:00 → workflow C calls `/report/weekly` → the report arrives in the
+management Telegram chat ("Am dringendsten ist Standort X: Kosten über Umsatz in 4 der letzten 4 Monate…") and
+is saved as a file. Nobody had to remember to do it.
+
+**Why n8n and not code, and why no AI in n8n?** n8n is made for "when X happens, do Y, then tell Z", it has
+ready connectors (webhooks, Telegram, email, Google Sheets, CRMs), and a non-developer can open a workflow and
+see what happens. The AI and checking logic stays in tested Python code, so n8n only moves data and every
+block is easy to understand. This split is also what the job description asks for: workflows in
+n8n/Make/Zapier, plus APIs and webhooks.
+
+### What each workflow does
+
 n8n is the **plumbing**: when something happens (webhook, schedule, chat), call the local API, then route the
 result (IF), notify (Telegram) and store it (file). All the AI and checking logic sits *inside* the API, so
 n8n stays simple and every workflow can be read by a non-developer.
@@ -314,9 +449,48 @@ is good for logic you need to test. The logic has evals; n8n only moves data.
 
 ## Project 5: Onboarding cockpit (`partner-onboarding/`)
 
-**Problem:** new franchise partners go through a 90-day checklist (insurance, permit, office, staff…). They send
-updates by email in free text. Partner management must keep the checklist up to date and spot risks, e.g. a
-partner seeing customers before the permit or background checks are done.
+### The case for it
+
+**The problem today:** every new franchise partner goes through a 90-day start: register the company, open a
+bank account, get insurance, apply for the official permit, rent an office, hire helpers, get their background
+checks, start marketing, win the first 10 customers. Partners report progress in free-text emails like
+"Gewerbe ist angemeldet, aber der Vermieter hat abgesagt". Partner management reads every email and updates a
+spreadsheet by hand. With several partners at once, things slip:
+- a task is overdue and nobody notices;
+- the permit takes 4–8 weeks, so a late application quietly ruins the 90-day target;
+- worst case: a partner starts serving customers **before** insurance, permit or background checks are done.
+  That is a legal and safety risk for the whole brand.
+
+**How it is solved:** partner emails go (via n8n) to the onboarding API. It turns each email into a
+**proposal**: "insurance → done", "office → blocked (landlord cancelled)", each with the sentence it came from.
+Partner management approves with one click. A traffic light per partner, built from fixed rules, shows who is
+on plan, who needs attention and who is critical, and why. Every weekday at 08:30 the red and orange cases
+arrive on Telegram.
+
+**What gets automated:** reading the updates, proposing checklist changes, tracking deadlines, forecasting
+the permit date and spotting critical risks. **What stays human:** approving every change, and talking to the
+partner.
+
+**End-to-end example:**
+> Partner Essen, day 52: *"Kurzes Update: Wir haben schon 3 Kunden! Das Büro ist angemietet, aber mit der
+> Versicherung klappt es leider noch nicht."*
+1. Split into clauses; tasks found by word lists: customers, office, insurance.
+2. Rules: "angemietet" → office **done**; "leider … nicht" → insurance **blocked**. The pattern "3 Kunden" →
+   customer count 3, so the first customer visit happened (the AI was asked about that clause and agreed).
+3. **Warning:** customers are being served, but insurance (a must-have before the first visit) is not done →
+   "Bitte sofort klären".
+4. The proposal waits for approval. Once approved, the traffic light for Essen turns 🔴 and the next
+   Telegram digest starts with Essen.
+
+**Why use AI here, and not plain automation?** Partners write naturally, mix good and bad news in one sentence,
+and use many words for the same thing. Plain automation would need partners to fill a strict status form,
+which they do not do in practice. Rules handle the clear wording (most cases); the AI is only asked about
+clauses the rules cannot decide. **Why not let the AI do everything?** The first version did: 7/15 correct,
+with confident wrong answers. Rules first, AI only for the unclear rest, a person approves: no wrong "done"
+in any blind test.
+
+**Why not an agent?** Every email goes through the same steps. A fixed pipeline with one small AI question
+per unclear clause is more predictable and easier to test than letting a model plan.
 
 **The chain:** partner email → 🟩 split into clauses → 🟩 find which checklist task each clause is about →
 🟩 rules decide clear cases / 🟧 AI only for unclear ones → proposal → 🟦 person approves → audit log + 🟩
@@ -370,6 +544,43 @@ misses were **missed updates, never a wrong "done"**. That is the safe direction
 and adds it by hand.
 
 ---
+
+## When to use what: plain automation, an LLM step, or an agent
+
+This is the decision I make for every process, and the reason the five projects look different:
+
+| Situation | Tool | Example here |
+|---|---|---|
+| Input is already structured, the steps are fixed | **Plain automation** (n8n, rules, a script). No AI. | Daily overdue list, weekly trigger, CSV log, traffic-light rules |
+| Input is free text (emails, forms, questions), the steps are fixed | **Pipeline with one small LLM step**, checked by code | Analytics question → form; handbook answer; unclear partner clause |
+| Input is free text **and** the right next step depends on the case | **Agent**: the model picks from whitelisted tools, code guards it | Intake (and more so once tools like "look up customer" are added) |
+| Anything that reaches a customer or changes data | **A person approves**, everything logged | Reply drafts, checklist changes |
+
+Rules that apply to all of them:
+1. **Use the smallest amount of AI that solves the problem.** Every AI step is a place that can be wrong, so
+   each one gets a code check right after it.
+2. **AI reads, code decides and calculates.** Priorities, numbers, deadlines and warnings come from rules
+   that staff can understand and change.
+3. **Measure it.** Each project has a test set written before tuning and a blind set, so "it works" is a number.
+4. **Data stays local.** The model runs on our own machine, so customer data never goes to an outside AI service.
+
+### How to say it in the interview (≈ 30 seconds)
+
+> "In every process I first ask: is the input structured? If yes, plain automation with n8n is enough, with no
+> AI. If people write free text, I add one LLM step that turns the text into structured data, and code checks
+> it against the source. I only use an agent where the next step really depends on the case, like the intake,
+> and even there the model can only choose from whitelisted tools. Decisions and numbers come from rules, and
+> anything that goes to a customer is approved by a person. That way the AI removes the reading and typing
+> work, but the team stays in control."
+
+German version:
+
+> „Bei jedem Prozess frage ich zuerst: Sind die Daten strukturiert? Dann reicht eine normale Automatisierung
+> mit n8n, ohne KI. Wenn Menschen freien Text schreiben, nutze ich einen KI-Schritt, der den Text in feste
+> Felder übersetzt, und der Code prüft das gegen den Originaltext. Einen Agenten nutze ich nur, wenn der
+> nächste Schritt wirklich vom Fall abhängt, wie bei den Kundenanfragen. Entscheidungen und Zahlen kommen aus
+> Regeln, und alles, was zum Kunden geht, gibt ein Mensch frei. So nimmt die KI die Lese- und Tipparbeit ab,
+> aber das Team behält die Kontrolle."
 
 ## Where the prompts are (quick reference)
 
