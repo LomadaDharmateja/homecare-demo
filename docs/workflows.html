@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="de" data-lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Abläufe im Detail</title>
+<meta name="description" content="Schritt für Schritt: wie die fünf HOMECARE-Demo-Projekte arbeiten, und wer jeden Schritt macht (n8n, KI, Code, Mensch).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Same light palette as the portfolio (index.html). One colour per "who does this step". */
+:root {
+  color-scheme: light;
+  --bg: #fbfcfb; --band: #eef6f3; --surface: #ffffff; --surface-2: #e9f2ee;
+  --ink: #1b2a25; --ink-soft: #52635c; --line: #dbe5e0;
+  --accent: #0b7a6e; --sun: #c27a12; --good: #2563b0; --n8n: #6a55c9; --data: #5b6b78;
+  --shadow: 0 1px 2px rgb(27 42 37 / .05), 0 8px 24px rgb(27 42 37 / .07);
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+html[data-lang="de"] [lang="en"]:not(html), html[data-lang="en"] [lang="de"]:not(html) { display: none !important; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 1.02rem/1.55 var(--font-body);
+  padding: 0 max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; border-radius: 6px; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.15; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+p { margin: 0; }
+.wrap { max-width: 860px; margin: 0 auto; }
+.mono { font-family: var(--font-mono); }
+
+.topbar { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line);
+  margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 10px max(16px, env(safe-area-inset-right, 0px)); }
+.topbar .wrap { display: flex; align-items: center; gap: 12px; }
+.back { font: 700 .95rem var(--font-display); color: var(--ink); text-decoration: none; margin-right: auto; }
+.lang { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface); }
+.lang button { font: 700 .8rem var(--font-mono); border: 0; background: transparent; color: var(--ink-soft); padding: 5px 12px; border-radius: 999px; cursor: pointer; }
+.lang button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+
+header.intro { margin: 28px 0 18px; display: grid; gap: 10px; }
+header.intro h1 { font-size: clamp(1.9rem, 5vw, 2.7rem); font-weight: 800; }
+.lead { max-width: 62ch; color: var(--ink-soft); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 6px 0 4px; font-size: .9rem; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font: 700 .72rem var(--font-mono); letter-spacing: .06em; text-transform: uppercase; }
+.chip::before { content: ""; width: 12px; height: 12px; border-radius: 3px; background: currentColor; }
+.w-n8n { color: var(--n8n); } .w-ai { color: var(--sun); } .w-code { color: var(--accent); } .w-human { color: var(--good); } .w-data { color: var(--data); }
+
+.tabs { display: flex; gap: 8px; overflow-x: auto; padding: 14px 0 6px; scrollbar-width: thin; }
+.tabs a { flex: none; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 999px; padding: 8px 14px; font: 700 .9rem var(--font-body); }
+.tabs a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.project { margin-top: 18px; display: grid; gap: 18px; }
+.project h2 { font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 800; }
+.say { background: var(--band); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.say b { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); display: block; margin-bottom: 2px; }
+
+/* The flow: a vertical line of cards, with arrows between. */
+.flow { display: grid; gap: 0; }
+.arrow { justify-self: start; margin-left: 30px; width: 2px; height: 22px; background: var(--line); position: relative; }
+.arrow::after { content: ""; position: absolute; left: -5px; bottom: -2px; border: 6px solid transparent; border-top-color: #b9c8c1; border-bottom: 0; }
+.step { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start; background: var(--surface);
+  border: 1px solid var(--line); border-left: 5px solid currentColor; border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow); }
+.step .n { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font: 700 .9rem var(--font-mono);
+  background: currentColor; }
+.step .n span { color: #fff; }
+.step .body { color: var(--ink); display: grid; gap: 3px; min-width: 0; }
+.step .body h3 { font-size: 1.08rem; font-weight: 700; }
+.step .body p { color: var(--ink-soft); }
+.step .at { font: 500 .78rem var(--font-mono); color: var(--ink-soft); overflow-wrap: anywhere; }
+.step .who { justify-self: start; }
+
+.group { border: 2px dashed #c9d6d0; border-radius: 16px; padding: 14px; display: grid; gap: 0; background: #f6faf8; }
+.group > .glabel { font: 700 .78rem var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 10px; }
+
+.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.branch { display: grid; gap: 0; align-content: start; }
+.branch > .blabel { font: 700 .82rem var(--font-body); color: var(--ink); background: var(--surface-2); border-radius: 8px; padding: 4px 10px; justify-self: start; margin-bottom: 8px; }
+
+.side { border-top: 1px solid var(--line); padding-top: 16px; display: grid; gap: 12px; }
+.side h3 { font-size: 1.2rem; }
+
+.n8nmap { width: 100%; border-collapse: collapse; font-size: .95rem; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.n8nmap th, .n8nmap td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.n8nmap th { font: 700 .75rem var(--font-mono); letter-spacing: .05em; text-transform: uppercase; color: var(--ink-soft); background: var(--surface-2); }
+.n8nmap tr:last-child td { border-bottom: 0; }
+.tablewrap { overflow-x: auto; }
+footer { margin-top: 36px; color: var(--ink-soft); font-size: .9rem; }
+@media (max-width: 520px) { .step { grid-template-columns: 1fr; } .arrow { margin-left: 22px; } }
+</style>
+</head>
+<body>
+<div class="topbar"><div class="wrap">
+  <a class="back" href="./"><span lang="de">← Portfolio</span><span lang="en">← Portfolio</span></a>
+  <div class="lang" role="group" aria-label="Sprache / Language">
+    <button type="button" data-set-lang="de" aria-pressed="true">DE</button>
+    <button type="button" data-set-lang="en" aria-pressed="false">EN</button>
+  </div>
+</div></div>
+
+<main class="wrap">
+  <header class="intro">
+    <h1><span lang="de">Abläufe im Detail</span><span lang="en">How each project works</span></h1>
+    <p class="lead"><span lang="de">Jedes Projekt Schritt für Schritt. Die Farbe zeigt, wer den Schritt macht. Der gestrichelte Rahmen ist das, was innerhalb der lokalen Python-API passiert. In n8n sieht man davon nur einen Knoten („API aufrufen").</span>
+      <span lang="en">Every project, step by step. The colour shows who does the step. The dashed frame is what happens inside the local Python API. In n8n that is a single node ("call the API").</span></p>
+    <div class="legend">
+      <span class="chip w-n8n">n8n</span><span class="chip w-ai"><span lang="de">KI versteht</span><span lang="en">AI understands</span></span>
+      <span class="chip w-code"><span lang="de">Code prüft / rechnet</span><span lang="en">Code checks / calculates</span></span>
+      <span class="chip w-human"><span lang="de">Mensch entscheidet</span><span lang="en">Person decides</span></span>
+      <span class="chip w-data"><span lang="de">Datenbank / Protokoll</span><span lang="en">Database / log</span></span>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="Projekte"></nav>
+  </header>
+  <section id="view" aria-live="polite"></section>
+  <footer><span lang="de">Alle Daten sind erfunden. Alles läuft lokal (Ollama, n8n, SQLite); nur der optionale Telegram-Alarm geht ins Internet, ohne Namen oder Gesundheitsdaten.</span>
+    <span lang="en">All data is invented. Everything runs locally (Ollama, n8n, SQLite); only the optional Telegram alert leaves the laptop, without names or health details.</span></footer>
+</main>
+
+<script>
+// Content. s(who, title, text, where): one box. G = group (inside the API). S = split into branches.
+const s = (w, title, text, at) => ({ w, title, text, at });
+const G = (label, items) => ({ group: label, items });
+const S = (...branches) => ({ split: branches });
+const B = (label, items) => ({ label, items });
+const L = (de, en) => ({ de, en });
+const API = L("In der lokalen API (Python) – in n8n ein einziger Knoten", "Inside the local API (Python) – one single node in n8n");
+
+const WHO = { n8n: "n8n", ai: L("KI", "AI"), code: L("Code", "Code"), human: L("Mensch", "Person"), data: L("Daten", "Data") };
+
+const PROJECTS = [
+{
+  id: "intake", tab: L("1 Anfragen", "1 Intake"),
+  name: L("Projekt 1: Anfragen-Eingang", "Project 1: Request intake"),
+  say: L("„Die KI liest die Anfrage und füllt ein Formular aus. Code prüft jede Angabe gegen den Originaltext, setzt die Priorität und schreibt den Antwortentwurf. Ein Mensch gibt frei. Notfälle landen sofort auf dem Handy.“",
+         "\"The AI reads the request and fills in a form. Code checks every fact against the original text, sets the priority and writes the reply draft. A person approves. Emergencies go straight to the phone.\""),
+  flow: [
+    s("n8n", L("Anfrage kommt an", "A request arrives"), L("Webformular oder E-Mail schickt den Text an eine Webhook-Adresse von n8n.", "A web form or email sends the text to an n8n webhook address."), "n8n A: Webhook: new request"),
+    s("n8n", L("n8n ruft die lokale API auf", "n8n calls the local API"), L("Ein HTTP-Knoten schickt den Text an POST /intake.", "One HTTP node sends the text to POST /intake."), "n8n A: Call FastAPI /intake (agent)"),
+    G(API, [
+      s("data", L("Speichern und protokollieren", "Save and log"), L("Die Anfrage bekommt eine Nummer. Ab jetzt wird jeder Schritt im Protokoll gespeichert.", "The request gets a number. From now on every step is written to the audit log."), "app/db.py"),
+      s("ai", L("Agent wählt das nächste Werkzeug", "The agent picks the next tool"), L("Aus 4 erlaubten Werkzeugen, höchstens 4 Schritte. Ein Werkzeug, das es nicht gibt oder das schon lief, kann es gar nicht wählen.", "From 4 allowed tools, at most 4 steps. It cannot pick a tool that doesn't exist or already ran."), "app/agent.py"),
+      s("ai", L("KI liest die Anfrage", "The AI reads the request"), L("Füllt ein festes Formular: Leistung, Ort, Termin, Dringlichkeit, Rückruf gewünscht. Lokales Modell qwen2.5:3b.", "Fills in a fixed form: service, city, date, urgency, callback wanted. Local model qwen2.5:3b."), "extract_fields"),
+      s("code", L("Code prüft gegen den Originaltext", "Code checks against the original text"), L("Sagt die KI „Neuss“, aber Neuss steht nicht im Text? Korrigiert. Jede Korrektur wird protokolliert. Das brachte 54 % → 90 %.", "The AI says \"Neuss\" but Neuss isn't in the text? Corrected. Every correction is logged. This took accuracy from 54% to 90%."), "ground_in_text"),
+      s("code", L("Fehlende Angaben", "Missing information"), L("Feste Regeln: kein Ort, kein Termin oder unklare Leistung → danach muss gefragt werden.", "Fixed rules: no city, no date or unclear service → we need to ask."), "check_missing_info"),
+      s("code", L("Priorität 1–5", "Priority 1–5"), L("Notfall-Wörter (gestürzt, Atemnot, keine Tabletten mehr …) → immer Priorität 1. „heute/sofort“ → dringend. Regeln können nur erhöhen, nie senken.", "Emergency words (fell, can't breathe, no medication …) → always priority 1. \"today/now\" → urgent. Rules can only raise urgency, never lower it."), "set_priority"),
+      s("code", L("Antwortentwurf", "Reply draft"), L("Code schreibt ihn aus den geprüften Angaben, in der Sprache des Kunden. Status: wartet auf Freigabe.", "Code writes it from the checked facts, in the customer's language. Status: waiting for approval."), "draft_followup"),
+      s("code", L("Sicherheitsnetz", "Safety net"), L("Hat der Agent einen Schritt vergessen, läuft er trotzdem. Scheitert die KI ganz: Priorität 1, „bitte manuell prüfen“. Nichts geht verloren.", "If the agent skipped a step, it runs anyway. If the AI fails completely: priority 1, \"please check manually\". Nothing gets lost."), "guardrails in agent.py"),
+    ]),
+    S(
+      B(L("Wenn dringend", "If urgent"), [
+        s("n8n", L("Telegram-Alarm", "Telegram alert"), L("Nur Fallnummer, Leistung und Ort: keine Namen, keine Gesundheitsdaten. Dazu eine Zeile in alerts.log als Backup.", "Only case number, service and city: no names, no health details. Plus a line in alerts.log as a backup."), "n8n A: IF urgency is high → Telegram"),
+      ]),
+      B(L("Immer", "Always"), [
+        s("data", L("CSV-Protokoll", "CSV log"), L("Eine Zeile pro Anfrage in intake_log.csv.", "One line per request in intake_log.csv."), "n8n A: Append to intake_log.csv"),
+      ]),
+    ),
+    s("human", L("Mensch gibt frei oder lehnt ab", "A person approves or rejects"), L("Im Dashboard: Liste nach Priorität, Entwurf prüfen, freigeben. Wer und wann steht im Protokoll. Es wird nichts automatisch verschickt.", "In the dashboard: list sorted by priority, check the draft, approve. Who and when goes into the log. Nothing is sent automatically."), "Dashboard localhost:8501"),
+  ],
+  side: { title: L("Dazu: Workflow B, jeden Morgen um 8 Uhr", "Plus: workflow B, every morning at 8:00"), flow: [
+    s("n8n", L("Zeitplan 08:00", "Schedule 08:00"), L("n8n startet von selbst.", "n8n starts by itself."), "n8n B: Every morning 08:00"),
+    s("code", L("Überfällige Rückrufe", "Overdue callbacks"), L("GET /overdue: Rückruf gewünscht, älter als 24 Stunden, noch keine Antwort freigegeben.", "GET /overdue: callback wanted, older than 24 hours, no reply approved yet."), "db.list_overdue"),
+    s("data", L("Zusammenfassung", "Summary"), L("Wenn es welche gibt: eine Datei overdue_summary_<Datum>.txt.", "If there are any: a file overdue_summary_<date>.txt."), "n8n B: Write summary"),
+  ] },
+},
+{
+  id: "n8n", tab: L("2 n8n", "2 n8n"),
+  name: L("Projekt 2: Die n8n-Workflows", "Project 2: The n8n workflows"),
+  say: L("„n8n ist die Verkabelung: Auslöser rein, lokale API fragen, Ergebnis verteilen. Die Logik, die man testen muss, liegt in Python. So kann jeder im Team den Ablauf sehen, ohne Code zu lesen.“",
+         "\"n8n is the wiring: trigger in, ask the local API, hand out the result. The logic that needs testing lives in Python. That way anyone on the team can see the process without reading code.\""),
+  table: [
+    ["A", L("Webhook: neue Anfrage", "Webhook: new request"), "POST :8000/intake", L("Telegram bei Notfall, alerts.log, CSV-Protokoll", "Telegram if urgent, alerts.log, CSV log")],
+    ["B", L("Täglich 08:00", "Daily 08:00"), "GET :8000/overdue", L("Datei mit überfälligen Rückrufen", "File of overdue callbacks")],
+    ["C", L("Montags 08:00", "Mondays 08:00"), "GET :8001/report/weekly", L("Telegram: Zusammenfassung + wichtigste Hinweise, .md-Datei", "Telegram: summary + top alerts, .md file")],
+    ["D", L("Chat in n8n", "Chat in n8n"), "POST :8002/frage", L("Antwort mit Quellen im Chat", "Answer with sources in the chat")],
+    ["E", L("Webhook: Partner-Update · Mo–Fr 08:30", "Webhook: partner update · Mon–Fri 08:30"), "POST :8003/updates · GET :8003/risiken", L("Vorschlag wartet auf Freigabe · Telegram: Risiken", "Proposal awaits approval · Telegram: risks")],
+  ],
+  flow: [
+    s("n8n", L("Auslöser", "Trigger"), L("Webhook (ein anderes System meldet sich), Zeitplan (jeden Morgen) oder Chat.", "Webhook (another system calls in), schedule (every morning) or chat."), L("Webhook · Schedule · Chat Trigger", "Webhook · Schedule · Chat Trigger")),
+    s("n8n", L("Lokale API fragen", "Ask the local API"), L("Ein HTTP-Knoten. Hier passiert die ganze KI- und Prüflogik, in Python, mit Tests.", "One HTTP node. All the AI and checking logic happens here, in Python, with tests."), "HTTP Request → host.docker.internal:8000–8003"),
+    s("code", L("Verzweigen", "Branch"), L("IF-Knoten: z. B. nur bei „dringend“ einen Alarm schicken.", "IF node: e.g. only send an alert if \"urgent\"."), "IF"),
+    s("n8n", L("Ergebnis verteilen", "Hand out the result"), L("Telegram, Datei, Antwort an den Absender. Später genauso: CRM, E-Mail, Teams.", "Telegram, file, reply to the sender. Later the same way: CRM, email, Teams."), "Telegram · Write file · Respond to webhook"),
+  ],
+},
+{
+  id: "analytics", tab: L("3 Analyse", "3 Analytics"),
+  name: L("Projekt 3: Fragen an die Partnerdaten", "Project 3: Questions to the partner data"),
+  say: L("„Die KI versteht nur die Frage und füllt ein Abfrage-Formular. Python rechnet jede Zahl. Deshalb kann die Antwort keine Zahl erfinden, und man sieht immer, wie gerechnet wurde.“",
+         "\"The AI only understands the question and fills in a query form. Python calculates every number. So the answer can't invent a figure, and you always see how it was calculated.\""),
+  flow: [
+    s("human", L("Frage in normaler Sprache", "A question in plain language"), L("z. B. „Welche 5 Standorte haben in den letzten 6 Monaten die meisten Kunden verloren?“", "e.g. \"Which 5 locations lost the most customers in the last 6 months?\""), "Dashboard localhost:8502"),
+    G(L("In der lokalen API (Python)", "Inside the local API (Python)"), [
+      s("code", L("Namen finden", "Find names"), L("Standorte und Bundesländer werden mit der echten Liste abgeglichen. Das kann Code perfekt, ein kleines Modell nicht.", "Locations and states are matched against the real list. Code does that perfectly; a small model doesn't."), "app/ask.py"),
+      s("ai", L("KI füllt das Abfrage-Formular", "The AI fills in the query form"), L("Welche Kennzahl, gruppiert wie, welcher Zeitraum, welche Filter. Nur aus festen Listen, kein SQL.", "Which figure, grouped how, which period, which filters. Fixed lists only, no SQL."), "qwen2.5:3b"),
+      s("code", L("Regeln prüfen das Formular", "Rules check the form"), L("Trendwörter („entwickeln“ → Monatsverlauf), Anzahl („Top 5“), Richtung („verloren“ → niedrigste zuerst). Jede Regel wird angezeigt.", "Trend words (\"develop\" → monthly trend), counts (\"top 5\"), direction (\"lost\" → lowest first). Every rule that fires is shown."), "app/ask.py"),
+      s("code", L("Python rechnet", "Python calculates"), L("pandas über SQLite. 55 erfundene Standorte, 24 Monate.", "pandas over SQLite. 55 invented locations, 24 months."), "app/engine.py"),
+      s("code", L("Antwort aus den Zahlen", "Answer built from the numbers"), L("Der Antwortsatz wird aus den berechneten Zahlen gebaut. Dazu Diagramm und „So wurde gerechnet“.", "The answer sentence is built from the computed numbers. Plus a chart and \"how this was calculated\"."), ""),
+    ]),
+    s("human", L("Mensch prüft und entscheidet", "A person checks and decides"), L("Das Abfrage-Formular ist sichtbar, also kann jeder nachprüfen, was gerechnet wurde.", "The query form is visible, so anyone can check what was calculated."), ""),
+  ],
+  side: { title: L("Dazu: Workflow C, montags um 8 Uhr", "Plus: workflow C, Mondays at 8:00"), flow: [
+    s("n8n", L("Zeitplan Montag 08:00", "Schedule Monday 08:00"), L("n8n ruft GET /report/weekly auf.", "n8n calls GET /report/weekly."), "n8n C"),
+    s("code", L("Regeln finden Warnungen", "Rules find warnings"), L("Geld reicht nur noch wenige Monate, wenig Liquidität, Kunden verloren, unter Businessplan, starkes Wachstum.", "Cash running out within months, low cash, losing customers, below plan, strong growth."), "app/report.py"),
+    s("ai", L("KI schreibt die Zusammenfassung", "The AI writes the summary"), L("Nur aus den gelieferten Fakten.", "Only from the facts it is given."), ""),
+    s("code", L("Code prüft jede Zahl", "Code checks every number"), L("Steht eine Zahl nicht in den Fakten, oder beginnt der Text nicht mit dem dringendsten Hinweis → feste Vorlage statt KI-Text.", "A number not in the facts, or the text doesn't start with the most urgent warning → fixed template instead of AI text."), ""),
+    s("n8n", L("Telegram + Datei", "Telegram + file"), L("Bericht aufs Handy und als weekly_report.md.", "Report to the phone and as weekly_report.md."), "n8n C"),
+  ] },
+},
+{
+  id: "handbook", tab: L("4 Handbuch", "4 Handbook"),
+  name: L("Projekt 4: Handbuch-Assistent", "Project 4: Handbook assistant"),
+  say: L("„Partner fragen das Handbuch statt die Zentrale. Die Antwort kommt nur aus dem Handbuch, mit Quelle. Was nicht drinsteht, sagt er ehrlich und sammelt es als Wissenslücke.“",
+         "\"Partners ask the handbook instead of head office. Answers come only from the handbook, with the source. If it's not in there, it says so and collects it as a knowledge gap.\""),
+  flow: [
+    s("human", L("Partner stellt eine Frage", "A partner asks a question"), L("Im Dashboard oder im n8n-Chat (Workflow D). Deutsch oder Englisch.", "In the dashboard or the n8n chat (workflow D). German or English."), "localhost:8503 · n8n D"),
+    G(L("In der lokalen API (Python)", "Inside the local API (Python)"), [
+      s("code", L("Notfall-Wörter?", "Emergency words?"), L("„gestürzt“, „bewusstlos“ … → zuerst „112 anrufen“. Fester Text, keine KI.", "\"fell\", \"unconscious\" … → \"call 112\" first. Fixed text, no AI."), ""),
+      s("ai", L("Englisch → Deutsch für die Suche", "English → German for the search"), L("Mit einem Glossar der Handbuch-Begriffe. Die Antwort bleibt Englisch.", "With a glossary of handbook terms. The answer stays in English."), ""),
+      s("code", L("Im Handbuch suchen", "Search the handbook"), L("Nach Bedeutung (Embedding-Modell) und nach genauen Wörtern, auch Teile von zusammengesetzten Wörtern. Die 5 besten Abschnitte.", "By meaning (embedding model) and by exact words, including parts of German compound words. The 5 best sections."), L("granite-embedding + BM25", "granite-embedding + BM25")),
+      s("ai", L("KI antwortet nur aus diesen Abschnitten", "The AI answers only from those sections"), L("Mit Quellenangabe, oder „nicht gefunden“.", "With the source cited, or \"not found\"."), "qwen2.5:3b"),
+      s("code", L("Code prüft die Antwort", "Code checks the answer"), L("Gibt es die zitierten Abschnitte? Steht jede Zahl der Antwort wirklich dort?", "Do the cited sections exist? Does every number in the answer really appear there?"), ""),
+    ]),
+    S(
+      B(L("Geprüft", "Checked"), [ s("human", L("Antwort + Quellen", "Answer + sources"), L("Abschnitt, zuständige Abteilung, Stand.", "Section, responsible department, date."), "") ]),
+      B(L("Prüfung fehlgeschlagen", "Check failed"), [ s("code", L("Abschnitt selbst zeigen", "Show the section itself"), L("Kein ungeprüfter KI-Text.", "No unchecked AI text."), "") ]),
+      B(L("Nicht im Handbuch", "Not in the handbook"), [ s("data", L("Ehrlich sagen + Wissenslücke", "Say so + knowledge gap"), L("Die Zentrale sieht, welche Themen fehlen und wie oft gefragt wurde.", "Head office sees which topics are missing and how often they were asked."), "") ]),
+    ),
+  ],
+},
+{
+  id: "onboarding", tab: L("5 Onboarding", "5 Onboarding"),
+  name: L("Projekt 5: Onboarding-Cockpit", "Project 5: Onboarding cockpit"),
+  say: L("„Neue Partner schreiben einfach E-Mails. Das System macht daraus Vorschläge für die Checkliste, ein Mensch gibt frei. Die Ampel rechnet nur Code, z. B. ‚Genehmigung kommt erst nach Tag 90‘.“",
+         "\"New partners just write emails. The system turns them into proposals for the checklist, and a person approves. Only code calculates the traffic light, e.g. 'the permit arrives after day 90'.\""),
+  flow: [
+    s("n8n", L("Partner schreibt ein Update", "A partner writes an update"), L("z. B. „Die Versicherung ist abgeschlossen, aber das Büro ist noch nicht frei.“ Per Webhook an n8n.", "e.g. \"Insurance is done, but the office isn't available yet.\" Via webhook to n8n."), "n8n E: Partner-Update (Webhook)"),
+    s("n8n", L("n8n ruft die lokale API auf", "n8n calls the local API"), "", "POST :8003/updates"),
+    G(API, [
+      s("code", L("In Sätze und Teilsätze zerlegen", "Split into sentences and clauses"), L("An Komma, Semikolon, „aber“.", "At commas, semicolons, \"but\"."), "app/updates.py"),
+      s("code", L("Welche Checklisten-Punkte?", "Which checklist tasks?"), L("Wortlisten aus dem Handbuch: Versicherung, Genehmigung, Büro, Schulung … (15 Punkte).", "Word lists from the handbook: insurance, permit, office, training … (15 tasks)."), "app/checklist.py"),
+      S(
+        B(L("Klare Wörter", "Clear wording"), [ s("code", L("Regel entscheidet", "A rule decides"), L("Hindernis → blockiert. Plan oder Frage → keine Änderung. „abgeschlossen / liegt vor“ → erledigt.", "Obstacle → blocked. Plan or question → no change. \"done / has arrived\" → done."), "") ]),
+        B(L("Unklar", "Unclear"), [ s("ai", L("KI beantwortet eine kleine Frage", "The AI answers one small question"), L("„Ist DIESER Punkt laut DIESEM Satz erledigt?“ Nur wenn der Satz in der Vergangenheit steht.", "\"Is THIS task done according to THIS clause?\" Only if the clause is in the past tense."), "") ]),
+      ),
+      s("code", L("Vorschlag mit Begründung", "Proposal with evidence"), L("Jede Änderung mit dem Satz, auf dem sie beruht, und wer entschieden hat (Regel oder KI). Warnung, wenn Kunden besucht werden, aber z. B. die Versicherung fehlt.", "Each change with the sentence it's based on, and who decided (rule or AI). A warning if customers are visited but e.g. the insurance is missing."), ""),
+    ]),
+    s("human", L("Mensch gibt frei", "A person approves"), L("Alles, einen Teil oder nichts. Ins Protokoll: wer, wann, vorher, nachher, Beleg.", "All, some or none. Logged: who, when, before, after, evidence."), "Dashboard localhost:8504"),
+    s("code", L("Ampel nur durch Code", "Traffic light by code only"), L("Kunden ohne Voraussetzungen · überfällige oder blockierte Punkte · Genehmigung: Antrag + 4–8 Wochen nach Tag 90? · Kundentempo an Tag 61–90.", "Customers without preconditions · overdue or blocked tasks · permit: application + 4–8 weeks after day 90? · customer pace on days 61–90."), "app/status.py"),
+    s("n8n", L("Mo–Fr 08:30: Risiken aufs Handy", "Mon–Fri 08:30: risks to the phone"), L("Kritische Partner zuerst, dazu offene Freigaben.", "Critical partners first, plus pending approvals."), "n8n E: Telegram: Onboarding-Risiken"),
+  ],
+},
+];
+
+let lang = "de";
+const t = (v) => (v == null ? "" : typeof v === "string" ? v : v[lang]);
+const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const both = (v) => (v == null ? "" : typeof v === "string" ? esc(v) : `<span lang="de">${esc(v.de)}</span><span lang="en">${esc(v.en)}</span>`);
+
+let counter = 0;
+const ARROW = '<div class="arrow" aria-hidden="true"></div>';
+function renderItems(items) {
+  return items.map((it, i) => (i ? ARROW : "") + renderItem(it)).join("");
+}
+function renderItem(it) {
+  if (it.group) return `<div class="group"><div class="glabel">${both(it.group)}</div>${renderItems(it.items)}</div>`;
+  if (it.split) return `<div class="split">${it.split.map((b) => `<div class="branch"><span class="blabel">${both(b.label)}</span>${renderItems(b.items)}</div>`).join("")}</div>`;
+  counter += 1;
+  const at = t(it.at) ? `<span class="at">${both(it.at)}</span>` : "";
+  return `<div class="step w-${it.w}"><div class="n"><span>${counter}</span></div><div class="body">
+    <span class="chip w-${it.w} who">${both(WHO[it.w])}</span><h3>${both(it.title)}</h3>${t(it.text) ? `<p>${both(it.text)}</p>` : ""}${at}</div></div>`;
+}
+
+function render() {
+  const id = location.hash.slice(1);
+  const p = PROJECTS.find((x) => x.id === id) || PROJECTS[0];
+  document.getElementById("tabs").innerHTML = PROJECTS.map((x) =>
+    `<a href="#${x.id}"${x === p ? ' aria-current="page"' : ""}>${both(x.tab)}</a>`).join("");
+  counter = 0;
+  let html = `<article class="project"><h2>${both(p.name)}</h2>
+    <div class="say"><b>${both(L("In einem Satz", "In one sentence"))}</b>${both(p.say)}</div>`;
+  if (p.table) {
+    html += `<div class="tablewrap"><table class="n8nmap"><thead><tr><th></th><th>${both(L("Auslöser", "Trigger"))}</th><th>${both(L("Ruft auf", "Calls"))}</th><th>${both(L("Ergebnis", "Result"))}</th></tr></thead><tbody>
+      ${p.table.map(([k, a, b, c]) => `<tr><td class="mono"><b>${k}</b></td><td>${both(a)}</td><td class="mono">${esc(b)}</td><td>${both(c)}</td></tr>`).join("")}</tbody></table></div>
+      <h3>${both(L("Jeder Workflow hat dieselbe Form", "Every workflow has the same shape"))}</h3>`;
+  }
+  html += `<div class="flow">${renderItems(p.flow)}</div>`;
+  if (p.side) { counter = 0; html += `<div class="side"><h3>${both(p.side.title)}</h3><div class="flow">${renderItems(p.side.flow)}</div></div>`; }
+  html += "</article>";
+  document.getElementById("view").innerHTML = html;
+}
+
+function setLang(l) {
+  lang = l === "en" ? "en" : "de";
+  document.documentElement.dataset.lang = lang;
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-set-lang]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.setLang === lang)));
+  try { localStorage.setItem("lang", lang); } catch (e) { /* storage blocked: the switch still works */ }
+}
+document.querySelectorAll("[data-set-lang]").forEach((b) => b.addEventListener("click", () => setLang(b.dataset.setLang)));
+let saved = null;
+try { saved = localStorage.getItem("lang"); } catch (e) { saved = null; }
+setLang(saved || "de");
+window.addEventListener("hashchange", () => { render(); window.scrollTo(0, 0); });
+render();
+</script>
+</body>
+</html>

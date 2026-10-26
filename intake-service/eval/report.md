@@ -22,7 +22,7 @@ one case is 5 percentage points. Results also vary by a case or two between runs
 
 - All six fields correct: **19/20 (95%)**
 - High-urgency recall (high cases labelled high): **6/6**
-- Average time per request (full agent loop, local GPU): 5.4s
+- Average time per request (full agent loop, local GPU): 4.0s
 
 Urgency confusion (rows = expected, columns = predicted):
 
@@ -45,7 +45,7 @@ Urgency confusion (rows = expected, columns = predicted):
 
 - All six fields correct: **29/30 (97%)**
 - High-urgency recall (high cases labelled high): **9/9**
-- Average time per request (full agent loop, local GPU): 5.5s
+- Average time per request (full agent loop, local GPU): 3.6s
 
 Urgency confusion (rows = expected, columns = predicted):
 
@@ -68,7 +68,7 @@ Urgency confusion (rows = expected, columns = predicted):
 
 - All six fields correct: **45/50 (90%)**
 - High-urgency recall (high cases labelled high): **15/15**
-- Average time per request (full agent loop, local GPU): 8.9s
+- Average time per request (full agent loop, local GPU): 3.6s
 
 Urgency confusion (rows = expected, columns = predicted):
 

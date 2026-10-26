@@ -345,14 +345,32 @@ def draft_followup(state: dict) -> dict:
 SAME_DAY = re.compile(r"\b(today|tonight|this (afternoon|evening)|right now|asap|heute|sofort)\b", re.IGNORECASE)
 
 
+# Danger words (fall, breathing, bleeding, no medication ...): always priority 1, whatever the model said.
+# Checked against all 100 test requests: every match is labelled urgent, so no false alarms there.
+EMERGENCY = re.compile(
+    r"(gestürzt|gestolpert|hingefallen|\bsturz\b|\bfell\b|has fallen|slipped|can'?t get up|cannot get up"
+    r"|kommt nicht (mehr )?hoch|\bstuck\b|bewusstlos|unconscious|not breathing|atemnot|keine luft|can'?t breathe"
+    r"|short of breath|chest pain|brustschmerz|blutet|bleeding|stroke|schlaganfall|herzinfarkt|heart attack"
+    r"|notfall|emergency|hohes fieber|high fever|ran out of|run out of"
+    r"|out of (his |her |their )?(oxygen|medication|insulin|tablets|pills)|aufgebraucht"
+    r"|keine (medikamente|tabletten) mehr|insulin)", re.IGNORECASE)
+
+
 def set_priority(state: dict) -> dict:
     # Fixed rules instead of model judgement, so staff can predict and explain the ordering.
     fields = state["fields"]
     result = {}
-    # Safety floor: same-day need is high urgency by definition. The rule can only raise urgency,
-    # never lower it, because missing an urgent case is worse than over-triaging a normal one.
+    # Safety floors: the rules can only raise urgency, never lower it, because missing an urgent
+    # case is worse than over-triaging a normal one.
     when_needed = fields["when_needed"] or ""
-    if fields["urgency"] != "high" and SAME_DAY.search(when_needed):
+    danger = EMERGENCY.search(state["text"])
+    if danger and fields["urgency"] != "high":
+        result["urgency_raised_from"] = fields["urgency"]
+        result["emergency_word"] = danger.group(0)
+        fields["urgency"] = "high"
+    elif danger:
+        result["emergency_word"] = danger.group(0)
+    elif fields["urgency"] != "high" and SAME_DAY.search(when_needed):
         result["urgency_raised_from"] = fields["urgency"]
         fields["urgency"] = "high"
     elif fields["urgency"] == "low" and when_needed:  # a concrete day means at least medium

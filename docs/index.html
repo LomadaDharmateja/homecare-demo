@@ -245,6 +245,7 @@ dialog::backdrop { background: rgb(5 10 9 / .75); }
       <p class="bio"><span lang="de">Ich automatisiere Büroarbeit in der Alltagshilfe: mit KI, die auf dem eigenen Rechner läuft, Vorschläge macht und Menschen entscheiden lässt. Alles hier habe ich für diese Bewerbung gebaut und mit eigenen Testfällen gemessen.</span><span lang="en">I automate office work in home care: with AI that runs on your own machine, makes suggestions and leaves decisions to people. I built everything here for this application and measured it with my own test cases.</span></p>
       <div class="actions">
         <a class="btn primary" href="#projekte"><span lang="de">Projekte ansehen</span><span lang="en">See the projects</span></a>
+        <a class="btn" href="workflows.html"><span lang="de">Abläufe im Detail</span><span lang="en">How it works</span></a>
         <a class="btn" href="#anforderungen"><span lang="de">Ihre Anforderungen → meine Nachweise</span><span lang="en">Your requirements → my proof</span></a>
       </div>
     </div>
@@ -537,7 +538,8 @@ function renderProject(p) {
       <div style="display:grid;gap:8px"><h3>${t({ de: "Was es macht", en: "What it does" })}</h3>${tp(p.does)}</div></div>${clip}</div>
     <div style="display:grid;gap:12px"><h3>${t({ de: "So läuft es ab", en: "How it runs" })}</h3>
       <div class="flow">${p.flow.map(([w, s], k) => `${k ? '<span class="arrow" aria-hidden="true">→</span>' : ""}<div class="step"><span class="who-does who-${w}">${t(WHO[w])}</span>${t(s)}</div>`).join("")}</div>
-      <div class="legend"><span class="who-ai">■ ${t({ de: "KI versteht", en: "AI understands" })}</span><span class="who-code">■ ${t({ de: "Code prüft und rechnet", en: "Code checks and calculates" })}</span><span class="who-human">■ ${t({ de: "Mensch entscheidet", en: "Person decides" })}</span></div></div>
+      <div class="legend"><span class="who-ai">■ ${t({ de: "KI versteht", en: "AI understands" })}</span><span class="who-code">■ ${t({ de: "Code prüft und rechnet", en: "Code checks and calculates" })}</span><span class="who-human">■ ${t({ de: "Mensch entscheidet", en: "Person decides" })}</span></div>
+      <a class="btn" style="justify-self:start" href="workflows.html#${p.id}">${t({ de: "Ablauf Schritt für Schritt →", en: "Step-by-step flow →" })}</a></div>
     <div style="display:grid;gap:12px"><h3>${t({ de: "Ergebnisse", en: "Results" })}</h3>
       <div class="metrics">${p.metrics.map(([n, l]) => `<div class="metric"><b>${n}</b><span>${t(l)}</span></div>`).join("")}</div>
       <p class="note">${t({ de: "Testfälle vor dem Bauen geschrieben; „blind“ heißt: ausgewertet, bevor ich etwas daran angepasst habe. Details im Bericht auf GitHub.", en: "Test cases written before building; “blind” means scored before I changed anything because of them. Details in the report on GitHub." })}</p></div>

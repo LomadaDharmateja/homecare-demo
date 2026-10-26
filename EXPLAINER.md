@@ -278,6 +278,14 @@ check the result against the text did most of the work.
     ("Blutdruckmittel" is not "Blutung"). The model's own sentence is kept in the audit log as a correction.
     The scored fields are unchanged, so the accuracy numbers above still apply.
     `data/reset_demo.py` resets the dashboard to five fresh example requests before a demo.
+22. **A fixed emergency word list (found while preparing to explain the project).** "Mein Vater ist gestürzt"
+    without "heute" or "sofort" relied on the model alone to call it urgent. `set_priority` now checks a fixed
+    list of danger words (gestürzt, Atemnot, bewusstlos, keine Tabletten mehr, chest pain, ran out of …):
+    a match always means urgency high and priority 1, and the matched word is logged. Like the other rules,
+    it can only raise urgency. Before adding it, I checked the list against all 100 test requests: every match
+    is labelled urgent, so there are no false alarms there. The model already caught every urgent test case,
+    so the scores are unchanged (final test 18/20, urgent 6/6). The rule is a safety net for wording the
+    model might miss, not a score improvement.
 
 ## 9. How to run everything (PowerShell)
 

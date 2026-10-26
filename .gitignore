@@ -4,3 +4,6 @@ n8n/output/
 # Personal files: never publish
 *.pdf
 *.docx
+
+# Private interview notes: never publish
+interview-prep/
