@@ -1,0 +1,210 @@
+{
+ "id": "HCob3AmpelRegeln",
+ "name": "HOMECARE F3 · Onboarding (n8n): Ampel berechnen (Unter-Workflow)",
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## Ampel: nur Regeln, keine KI\nWird vom Morgen-Bericht und von der Cockpit-Seite aufgerufen.\n🔴 Kunden ohne Versicherung/Zulassung, Pflichtpunkt blockiert oder überfällig, Zulassung erst nach Tag 90.\n🟠 normaler Punkt überfällig/blockiert, Zulassung spät, Kundenziel unrealistisch.",
+    "width": 640,
+    "height": 200,
+    "color": 4
+   },
+   "id": "9284c4f5-f403-599c-9f73-b3a2a31a75e0",
+   "name": "Notiz 1",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -40,
+    -260
+   ]
+  },
+  {
+   "parameters": {
+    "inputSource": "passthrough"
+   },
+   "id": "9bd9b467-3b8f-5f65-a6f1-7e772f1eabf9",
+   "name": "Aufruf von anderem Workflow",
+   "type": "n8n-nodes-base.executeWorkflowTrigger",
+   "typeVersion": 1.1,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "get",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_checkliste"
+    },
+    "returnAll": true
+   },
+   "id": "ba2f008e-2409-584b-a1f0-c15ca2cf7642",
+   "name": "Checkliste",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    220,
+    0
+   ],
+   "executeOnce": true
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "get",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_partner"
+    },
+    "returnAll": true
+   },
+   "id": "01ab8a27-4b6a-5590-b04f-36adf1f565ed",
+   "name": "Partner",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    440,
+    0
+   ],
+   "executeOnce": true
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "get",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_aufgaben"
+    },
+    "returnAll": true
+   },
+   "id": "cd3a3e48-4b33-5677-8d1b-83526a36fd5e",
+   "name": "Aufgaben",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    660,
+    0
+   ],
+   "executeOnce": true
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "get",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_vorschlaege"
+    },
+    "matchType": "allConditions",
+    "filters": {
+     "conditions": [
+      {
+       "keyName": "status",
+       "condition": "eq",
+       "keyValue": "offen"
+      }
+     ]
+    },
+    "returnAll": true
+   },
+   "id": "855105b6-cc5d-5e88-89c3-821348d34e1f",
+   "name": "Offene Vorschläge",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    880,
+    0
+   ],
+   "executeOnce": true,
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "jsCode": "// Partner update -> proposed checklist changes. Same logic as app/updates.py, written for n8n Code nodes.\n// Code splits the message and finds the tasks; clear wording is decided by rules; only unclear clauses go to\n// the AI (one small question each). Nothing here changes the checklist: a person approves later.\n\n// JavaScript's \\b and \\w only know a-z. German needs ä, ö, ü, ß, so both are rebuilt with Unicode classes.\nconst WORD = '[\\\\p{L}\\\\p{N}_]';\nconst BOUNDARY = `(?:(?<=${WORD})(?!${WORD})|(?<!${WORD})(?=${WORD}))`;\nfunction rx(source, flags = 'iu') {\n  return new RegExp(source.replace(/\\\\b/g, BOUNDARY).replace(/\\\\w/g, WORD), flags);\n}\n\nconst BLOCKED = rx('leider|abgesagt|abgesprungen|abgelehnt|fehlt|fehlen|nachgefordert|immer noch nicht|' +\n  'warten immer noch|zickt|klappt( es)?( leider)? nicht|keine passenden|problem|cancel+ed|rejected|refused|missing');\nconst NOT_DONE = rx('\\\\b(noch nicht|nicht|kein|keine|keinen|werden|wird|planen|geplant|nächste[nrs]?|bald|' +\n  'morgen|hoffentlich|sobald|demnächst|wollen|möchten|soll|dauert noch|' +\n  'not|no|will|plan|planned|next|soon|tomorrow|hope)\\\\b|\\\\?');\nconst DONE = rx('\\\\b(abgeschlossen|eröffnet|angemeldet|eingestellt|angemietet|gegründet|verteilt|erschienen|' +\n  'gekommen|online|aktiv|eingerichtet|raus|liegt vor|liegen vor|ist da|sind da|zugelassen|anerkannt|' +\n  'teilgenommen|besucht|stattgefunden|signed|done|open|ready|hired|approved|registered|completed)\\\\b');\n// The AI may only call something done in a clause that reports the past or a state.\nconst PAST = rx('\\\\b(ist|sind|war|waren|wurde|wurden|hat|haben|hatten|seit|bereits|schon|' +\n  'is|are|was|were|has|have|had|already)\\\\b|\\\\bge\\\\w+[t|n]\\\\b|\\\\w+ed\\\\b');\nconst NUM = { ersten: 1, zwei: 2, drei: 3, vier: 4, 'fünf': 5, sechs: 6, sieben: 7, acht: 8, neun: 9,\n  zehn: 10, elf: 11, 'zwölf': 12 };\nconst CUSTOMERS = rx('\\\\b(\\\\d{1,3}|' + Object.keys(NUM).join('|') + ')\\\\s+(?:aktive[n]?\\\\s+)?(kunden|kundinnen|kunde|kundin|' +\n  'customers|clients)\\\\b');\n// Generic words: they mention a task in passing more often than they report on it.\nconst WEAK = { helfer: ['helfer', 'mitarbeiter', 'personal', 'staff', 'carer', 'helper'],\n  erster_kunde: ['kunde', 'kundin', 'customer', 'client'], software: ['software'] };\n\nfunction sentences(text) {\n  return text.split(/(?<=[.!?])\\s+|\\n+/u).map(s => s.trim()).filter(Boolean);\n}\nfunction clauses(sentence) {\n  return sentence.split(/,\\s+|;\\s+|\\s+(?:aber|but)\\s+/u).map(c => c.trim()).filter(Boolean);\n}\nconst esc = s => s.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n\n// Position of a word. Long words also inside compounds ('Haftpflichtversicherung'); 4-5 letters at the start\n// or end of a word ('Geschäftskonto'); 2-3 letters only as a whole word ('ug' is not in 'Führungszeugnis').\nfunction has(text, word) {\n  if (word.startsWith('^')) {\n    const m = text.match(rx('(?<!\\\\w)' + esc(word.slice(1)), 'u'));\n    return m ? m.index : -1;\n  }\n  if (word.length >= 6) return text.indexOf(word);\n  const w = esc(word);\n  const m = text.match(rx(word.length <= 3 ? `\\\\b${w}\\\\b` : `(?<!\\\\w)${w}|${w}(?!\\\\w)`, 'u'));\n  return m ? m.index : -1;\n}\n\n// Tasks a clause talks about, in the order they appear. A generic word only counts when nothing more specific\n// is there: 'Führungszeugnisse für beide Helfer liegen vor' is about the certificate.\nfunction mentioned(text, judged) {\n  const low = text.toLowerCase().replace(/antrag(s|es)? auf (anerkennung|zulassung)/gu, 'antrag');\n  const first = (task, weak) => {\n    const hits = task.words.filter(w => (WEAK[task.id] || []).includes(w) === weak).map(w => has(low, w)).filter(h => h >= 0);\n    return hits.length ? Math.min(...hits) : null;\n  };\n  let found = judged.map(t => [t.id, first(t, false)]).filter(([, p]) => p !== null);\n  if (!found.length) found = judged.map(t => [t.id, first(t, true)]).filter(([, p]) => p !== null);\n  return found.sort((a, b) => a[1] - b[1]).map(([id]) => id);\n}\n\nfunction addDays(iso, n) {\n  const d = new Date(iso + 'T00:00:00Z');\n  d.setUTCDate(d.getUTCDate() + n);\n  return d.toISOString().slice(0, 10);\n}\n\nfunction doneDate(text, received) {\n  const low = text.toLowerCase();\n  if (low.includes('vorgestern')) return addDays(received, -2);\n  if (low.includes('gestern') || low.includes('yesterday')) return addDays(received, -1);\n  const m = low.match(/(?<![\\p{L}\\p{N}_])am (\\d{1,2})\\.(\\d{1,2})\\./u);\n  if (m) {\n    const [day, month] = [Number(m[1]), Number(m[2])];\n    const d = new Date(Date.UTC(Number(received.slice(0, 4)), month - 1, day));\n    if (d.getUTCMonth() === month - 1 && d.getUTCDate() === day) return d.toISOString().slice(0, 10);\n  }\n  return received;\n}\n\n// 'Stand heute: 4 Kunden aktiv' -> 4. Not from plans ('hoffentlich 10 Kunden').\nfunction customerCount(message) {\n  for (const s of sentences(message)) {\n    if (NOT_DONE.test(s)) continue;\n    const m = s.match(CUSTOMERS);\n    if (m) {\n      const n = m[1].toLowerCase();\n      return /^\\d+$/.test(n) ? Number(n) : NUM[n];\n    }\n  }\n  return null;\n}\n\n// Step 1: rules. Returns the events in message order. Clauses the rules cannot decide become 'ai' events,\n// one per (clause, task) pair; questions[] is what goes to the AI.\nfunction ruleEvents(message, checklist) {\n  const judged = checklist.filter(t => t.id !== 'zehn_kunden');\n  const events = [];\n  const questions = [];\n  for (const s of sentences(message)) {\n    let previous = [];\n    for (const c of clauses(s)) {\n      const tasks = mentioned(c, judged);\n      if (!tasks.length) {\n        if (BLOCKED.test(c) && previous.length) {  // \"..., uns fehlt noch ein Formular\"\n          events.push({ kind: 'add', task: previous[0], status: 'blockiert', satz: s, how: 'Regel: Hindernis genannt', sentence: s });\n        }\n        continue;\n      }\n      previous = tasks;\n      if (BLOCKED.test(c)) {\n        events.push({ kind: 'add', task: tasks[0], status: 'blockiert', satz: c, how: 'Regel: Hindernis genannt', sentence: s });\n      } else if (NOT_DONE.test(c)) {\n        events.push({ kind: 'note', satz: c, tasks, grund: \"Plan, Frage oder 'noch nicht': keine Änderung\" });\n      } else if (DONE.test(c)) {\n        for (const t of tasks) events.push({ kind: 'add', task: t, status: 'erledigt', satz: c, how: 'Regel: als erledigt gemeldet', sentence: s });\n      } else if (!PAST.test(c)) {  // \"Die Startschulung machen wir im Dezember\": the AI once said done\n        events.push({ kind: 'note', satz: c, tasks, grund: 'keine Vergangenheit, kein Zustand: keine Änderung' });\n      } else {\n        for (const t of tasks) {\n          events.push({ kind: 'ai', q: questions.length, satz: c, task: t, sentence: s });\n          questions.push({ satz: c, task: t, titel: checklist.find(x => x.id === t).title });\n        }\n      }\n    }\n  }\n  return { events, questions };\n}\n\n// Step 2: replay the events with the AI's answers, then add the customer count and follow-on facts.\nfunction buildProposal(message, events, answers, received) {\n  const accepted = {};\n  const order = [];\n  const notes = [];\n  const add = (task, status, satz, how, sentence) => {\n    const old = accepted[task];\n    if (old && (old.status === 'erledigt' || status === 'blockiert')) return;  // \"done\" wins\n    if (!old) order.push(task);\n    accepted[task] = { task, status, satz, entschieden_von: how,\n      done_on: status === 'erledigt' ? doneDate(sentence, received) : null };\n  };\n  for (const e of events) {\n    if (e.kind === 'add') add(e.task, e.status, e.satz, e.how, e.sentence);\n    else if (e.kind === 'note') notes.push({ satz: e.satz, tasks: e.tasks, grund: e.grund });\n    else {\n      const a = answers[e.q] || { begruendung: 'ungültige Modellantwort', erledigt: false };\n      if (a.erledigt === true) add(e.task, 'erledigt', e.satz, `KI: ${a.begruendung}`, e.sentence);\n      else notes.push({ satz: e.satz, tasks: [e.task], grund: `KI: keine Änderung (${a.begruendung})` });\n    }\n  }\n  const customers = customerCount(message);\n  const derive = (task, why) => {\n    if ((accepted[task] || {}).status !== 'erledigt') {\n      if (!accepted[task]) order.push(task);\n      accepted[task] = { task, status: 'erledigt', satz: why, entschieden_von: 'Regel: Folgerung', done_on: received };\n    }\n  };\n  if ((accepted.zulassung || {}).status === 'erledigt') derive('antrag', 'Zulassung liegt vor, also wurde der Antrag gestellt');\n  if (customers && customers >= 1) derive('erster_kunde', `${customers} aktive Kunden, also hat der erste Einsatz stattgefunden`);\n  if (customers && customers >= 10) derive('zehn_kunden', `${customers} aktive Kunden`);\n  return { changes: order.map(t => accepted[t]), notes, active_customers: customers };\n}\n\n// The checklist comes from a data table: words are stored comma-separated.\nfunction checklistFromRows(rows) {\n  return rows.slice().sort((a, b) => a.nr - b.nr).map(r => ({\n    id: r.aufgabe, phase: r.phase, title: r.titel, due_day: r.faellig_tag, owner: r.zustaendig,\n    gate: r.vor_erstem_kunden === true, words: String(r.stichwoerter).split(',').map(w => w.trim()).filter(Boolean),\n  }));\n}\n// Traffic light per partner. Plain rules, no AI: every finding says which rule fired and why.\n// Same logic as app/status.py and service.risks().\n\nconst LEVELS = ['im Plan', 'Achtung', 'kritisch'];\nconst TARGET_CUSTOMERS = 10;\nconst PERMIT_WEEKS = [4, 8];  // handbook: the authority usually needs 4 to 8 weeks\n\nconst dayMs = 86400000;\nconst toDate = iso => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10));\nconst daysBetween = (a, b) => Math.round((toDate(a) - toDate(b)) / dayMs);\nconst plusDays = (iso, n) => new Date(toDate(iso) + n * dayMs).toISOString().slice(0, 10);\nconst ddmm = iso => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.`;\n\n// partner: {start_date, active_customers}; tasks: {taskId: {status, done_on, note}}; today: 'YYYY-MM-DD'\nfunction assess(partner, tasks, checklist, today) {\n  const byId = Object.fromEntries(checklist.map(t => [t.id, t]));\n  const gate = checklist.filter(t => t.gate).map(t => t.id);\n  const day = daysBetween(today, partner.start_date) + 1;\n  const findings = [];\n  const add = (level, text) => findings.push({ level, text });\n\n  // 1. First customer visit without the handbook's preconditions: the most serious case.\n  const missingGate = gate.filter(g => tasks[g].status !== 'erledigt');\n  if (tasks.erster_kunde.status === 'erledigt' && missingGate.length) {\n    add('kritisch', 'Kundeneinsätze laufen, aber Voraussetzungen fehlen: ' + missingGate.map(g => byId[g].title).join(', ') + '.');\n  }\n  // 2. Blocked and overdue tasks. A gate task blocks the start of customer care, so it is critical.\n  for (const t of checklist) {\n    const row = tasks[t.id];\n    if (row.status === 'blockiert') {\n      add(t.gate ? 'kritisch' : 'Achtung', `Blockiert: ${t.title}` + (row.note ? ` (${row.note})` : '') + '.');\n    } else if (row.status === 'offen' && t.due_day < day) {\n      add(t.gate ? 'kritisch' : 'Achtung', `Überfällig seit Tag ${t.due_day}: ${t.title} (zuständig: ${t.owner}).`);\n    }\n  }\n  // 3. Permit forecast: the authority needs 4-8 weeks after the application.\n  if (tasks.zulassung.status !== 'erledigt') {\n    let filed, basis;\n    if (tasks.antrag.status === 'erledigt' && tasks.antrag.done_on) {\n      filed = tasks.antrag.done_on;\n      basis = `Antrag gestellt am ${ddmm(filed)}`;\n    } else {\n      filed = today;\n      basis = 'Antrag noch nicht gestellt, frühestens heute';\n    }\n    const first = daysBetween(plusDays(filed, PERMIT_WEEKS[0] * 7), partner.start_date) + 1;\n    const last = daysBetween(plusDays(filed, PERMIT_WEEKS[1] * 7), partner.start_date) + 1;\n    if (first > 90) {\n      add('kritisch', `Zulassung kommt erst zwischen Tag ${first} und ${last} (${basis}). Vor Tag 90 sind keine Kundeneinsätze möglich.`);\n    } else if (last > 90) {\n      add('Achtung', `Zulassung kommt zwischen Tag ${first} und ${last} (${basis}). Das Ziel von ${TARGET_CUSTOMERS} Kunden bis Tag 90 ist gefährdet.`);\n    }\n  }\n  // 4. Customer target in phase 3.\n  const customers = partner.active_customers;\n  if (day > 60 && day <= 90 && customers < TARGET_CUSTOMERS && !missingGate.length) {\n    const left = 90 - day + 1;\n    const need = TARGET_CUSTOMERS - customers;\n    if (need > left / 2) {  // more than one new customer every two days: unrealistic\n      add('Achtung', `${customers} von ${TARGET_CUSTOMERS} Kunden, noch ${left} Tage bis Tag 90 (nötig: ${need} neue Kunden).`);\n    }\n  }\n  const done = checklist.filter(t => tasks[t.id].status === 'erledigt').length;\n  const level = findings.reduce((m, f) => (LEVELS.indexOf(f.level) > LEVELS.indexOf(m) ? f.level : m), 'im Plan');\n  findings.sort((a, b) => LEVELS.indexOf(b.level) - LEVELS.indexOf(a.level));\n  return { day, phase: day <= 30 ? 1 : day <= 60 ? 2 : 3, done, total: checklist.length, level, findings,\n    ready_for_customers: !missingGate.length, missing_for_customers: missingGate.map(g => byId[g].title) };\n}\n\n// Telegram text: partners that need attention, most serious first.\nfunction risksText(assessed, pending) {\n  const rows = assessed.filter(p => p.level !== 'im Plan')\n    .sort((a, b) => (a.level !== 'kritisch') - (b.level !== 'kritisch') || b.day - a.day);\n  const icon = { kritisch: '🔴', Achtung: '🟠' };\n  const lines = [`🧭 Onboarding neuer Partner: ${rows.filter(p => p.level === 'kritisch').length} kritisch, ` +\n    `${rows.filter(p => p.level === 'Achtung').length} mit Hinweis`];\n  for (const p of rows) lines.push(`${icon[p.level]} ${p.city} (Tag ${p.day}): ${p.findings[0].text}`);\n  if (pending) lines.push(`📨 ${pending} Partner-Update(s) warten auf Freigabe.`);\n  lines.push('Details im Onboarding-Cockpit. (Erfundene Demo-Daten)');\n  return { count: rows.length, text: lines.join('\\n') };\n}\n\nconst today = $now.setZone('Europe/Berlin').toISODate();\nconst checklist = checklistFromRows($('Checkliste').all().map(i => i.json));\nconst taskRows = $('Aufgaben').all().map(i => i.json);\nconst open = $('Offene Vorschläge').all().map(i => i.json).filter(v => v.id).sort((x, y) => y.id - x.id);\nconst partners = $('Partner').all().map(i => i.json).sort((x, y) => x.start.localeCompare(y.start)).map(p => {\n  const tasks = Object.fromEntries(taskRows.filter(r => r.partner_id === p.partner_id)\n    .map(r => [r.aufgabe, {status: r.status, done_on: r.erledigt_am || null, note: r.notiz || ''}]));\n  const a = assess({start_date: p.start, active_customers: p.aktive_kunden}, tasks, checklist, today);\n  return {...p, city: p.stadt, ...a};\n});\nconst risks = risksText(partners, open.length);\nreturn [{json: {today, partners, offene_vorschlaege: open, telegram_text: risks.text, auffaellig: risks.count}}];\n"
+   },
+   "id": "ad92cdf5-cf4d-531f-9f1b-469908847c3f",
+   "name": "Ampel-Regeln",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1100,
+    0
+   ]
+  }
+ ],
+ "connections": {
+  "Aufruf von anderem Workflow": {
+   "main": [
+    [
+     {
+      "node": "Checkliste",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Checkliste": {
+   "main": [
+    [
+     {
+      "node": "Partner",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Partner": {
+   "main": [
+    [
+     {
+      "node": "Aufgaben",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Aufgaben": {
+   "main": [
+    [
+     {
+      "node": "Offene Vorschläge",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Offene Vorschläge": {
+   "main": [
+    [
+     {
+      "node": "Ampel-Regeln",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1",
+  "callerPolicy": "workflowsFromSameOwner"
+ },
+ "pinData": {},
+ "active": false,
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "tags": []
+}

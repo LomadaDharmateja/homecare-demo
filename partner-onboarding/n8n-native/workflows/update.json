@@ -1,0 +1,1522 @@
+{
+ "id": "HCob2PartnerUpd0",
+ "name": "HOMECARE F2 · Onboarding (n8n): Partner-Update → Vorschlag → Freigabe",
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## 1. Eingang\nE-Mail oder Formular des Partners kommt per Webhook. Der zweite Start ist der **Test**: n8n Evaluations schickt die 50 Testnachrichten durch denselben Ablauf.",
+    "width": 420,
+    "height": 200,
+    "color": 7
+   },
+   "id": "ec88f4d3-7863-5c62-b4aa-1baec6ea59ba",
+   "name": "Notiz 1",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -500,
+    -300
+   ]
+  },
+  {
+   "parameters": {
+    "content": "## 2. Regeln zuerst (Code, keine KI)\nNachricht in Satzteile zerlegen, Checklisten-Punkte über Stichwörter finden.\nKlare Wörter entscheiden: *leider/fehlt* → blockiert, *noch nicht/?* → keine Änderung, *abgeschlossen/liegt vor* → erledigt.\nNur unklare Satzteile in der Vergangenheit gehen an die KI.",
+    "width": 520,
+    "height": 220,
+    "color": 4
+   },
+   "id": "ea35180b-0ab7-5279-bb26-510d1aab0778",
+   "name": "Notiz 2",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    160,
+    -360
+   ]
+  },
+  {
+   "parameters": {
+    "content": "## 3. KI nur für Unklares\nEine kleine Frage je Satzteil: *Ist dieser Punkt erledigt?* Lokales Modell (Ollama), Antwort in festem Format: Begründung, dann ja/nein.",
+    "width": 460,
+    "height": 180,
+    "color": 3
+   },
+   "id": "e41b7920-bf9b-51e1-8065-1645f5164883",
+   "name": "Notiz 3",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    740,
+    -360
+   ]
+  },
+  {
+   "parameters": {
+    "content": "## 4. Vorschlag, keine Änderung\nAbgleich mit der Checkliste, Warnung bei Kunden ohne Versicherung/Zulassung. Gespeichert als Vorschlag, Antwort an den Absender.",
+    "width": 520,
+    "height": 160,
+    "color": 6
+   },
+   "id": "eb064503-9986-5167-b8ad-b1e27acf15c7",
+   "name": "Notiz 4",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    1640,
+    -10
+   ]
+  },
+  {
+   "parameters": {
+    "content": "## 5. Mensch entscheidet\nDer Ablauf **wartet**, bis jemand im Formular freigibt (mit Namen). Erst dann ändern sich Checkliste und Kundenzahl. Jede Änderung steht im Protokoll.",
+    "width": 520,
+    "height": 160,
+    "color": 4
+   },
+   "id": "ddc9ed28-eb6b-55da-b988-30f20080f7a7",
+   "name": "Notiz 5",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    2980,
+    -10
+   ]
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "onboarding-update",
+    "responseMode": "responseNode",
+    "options": {}
+   },
+   "id": "40ec718c-bd0e-571d-a07e-c57b238d2ce3",
+   "name": "Partner-Update (Webhook)",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    -480,
+    0
+   ],
+   "webhookId": "ba315848-ace9-5c7f-b7b5-b62237205288"
+  },
+  {
+   "parameters": {
+    "source": "dataTable",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_testfaelle"
+    },
+    "limitRows": false
+   },
+   "id": "cdc687b1-0178-5ffc-b5f9-0cc1a12683a7",
+   "name": "Testfälle (n8n Evaluations)",
+   "type": "n8n-nodes-base.evaluationTrigger",
+   "typeVersion": 4.7,
+   "position": [
+    -480,
+    220
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const j = $json;\nconst now = $now.toISO();\nif (j.body) {  // webhook: {partner_id, nachricht, nur_testen?}\n  return {json: {partner_id: Number(j.body.partner_id), nachricht: String(j.body.nachricht || '').trim(),\n    nur_testen: j.body.nur_testen === true, eingegangen: now}};\n}\n// evaluation: one test case from ob_testfaelle\nreturn {json: {partner_id: 0, nachricht: j.nachricht, erwartet: j.erwartet, kunden_erwartet: j.kunden_erwartet,\n  testset: j.testset, nur_testen: true, eingegangen: now}};\n",
+    "mode": "runOnceForEachItem"
+   },
+   "id": "73d60538-285e-5705-aa0d-c55ccee745dc",
+   "name": "Eingang vorbereiten",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -240,
+    100
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "get",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_checkliste"
+    },
+    "returnAll": true
+   },
+   "id": "13f4d8b7-0aa1-5e38-a2b8-9fff4ff69dbb",
+   "name": "Checkliste laden",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    0,
+    100
+   ],
+   "executeOnce": true
+  },
+  {
+   "parameters": {
+    "jsCode": "// Partner update -> proposed checklist changes. Same logic as app/updates.py, written for n8n Code nodes.\n// Code splits the message and finds the tasks; clear wording is decided by rules; only unclear clauses go to\n// the AI (one small question each). Nothing here changes the checklist: a person approves later.\n\n// JavaScript's \\b and \\w only know a-z. German needs ä, ö, ü, ß, so both are rebuilt with Unicode classes.\nconst WORD = '[\\\\p{L}\\\\p{N}_]';\nconst BOUNDARY = `(?:(?<=${WORD})(?!${WORD})|(?<!${WORD})(?=${WORD}))`;\nfunction rx(source, flags = 'iu') {\n  return new RegExp(source.replace(/\\\\b/g, BOUNDARY).replace(/\\\\w/g, WORD), flags);\n}\n\nconst BLOCKED = rx('leider|abgesagt|abgesprungen|abgelehnt|fehlt|fehlen|nachgefordert|immer noch nicht|' +\n  'warten immer noch|zickt|klappt( es)?( leider)? nicht|keine passenden|problem|cancel+ed|rejected|refused|missing');\nconst NOT_DONE = rx('\\\\b(noch nicht|nicht|kein|keine|keinen|werden|wird|planen|geplant|nächste[nrs]?|bald|' +\n  'morgen|hoffentlich|sobald|demnächst|wollen|möchten|soll|dauert noch|' +\n  'not|no|will|plan|planned|next|soon|tomorrow|hope)\\\\b|\\\\?');\nconst DONE = rx('\\\\b(abgeschlossen|eröffnet|angemeldet|eingestellt|angemietet|gegründet|verteilt|erschienen|' +\n  'gekommen|online|aktiv|eingerichtet|raus|liegt vor|liegen vor|ist da|sind da|zugelassen|anerkannt|' +\n  'teilgenommen|besucht|stattgefunden|signed|done|open|ready|hired|approved|registered|completed)\\\\b');\n// The AI may only call something done in a clause that reports the past or a state.\nconst PAST = rx('\\\\b(ist|sind|war|waren|wurde|wurden|hat|haben|hatten|seit|bereits|schon|' +\n  'is|are|was|were|has|have|had|already)\\\\b|\\\\bge\\\\w+[t|n]\\\\b|\\\\w+ed\\\\b');\nconst NUM = { ersten: 1, zwei: 2, drei: 3, vier: 4, 'fünf': 5, sechs: 6, sieben: 7, acht: 8, neun: 9,\n  zehn: 10, elf: 11, 'zwölf': 12 };\nconst CUSTOMERS = rx('\\\\b(\\\\d{1,3}|' + Object.keys(NUM).join('|') + ')\\\\s+(?:aktive[n]?\\\\s+)?(kunden|kundinnen|kunde|kundin|' +\n  'customers|clients)\\\\b');\n// Generic words: they mention a task in passing more often than they report on it.\nconst WEAK = { helfer: ['helfer', 'mitarbeiter', 'personal', 'staff', 'carer', 'helper'],\n  erster_kunde: ['kunde', 'kundin', 'customer', 'client'], software: ['software'] };\n\nfunction sentences(text) {\n  return text.split(/(?<=[.!?])\\s+|\\n+/u).map(s => s.trim()).filter(Boolean);\n}\nfunction clauses(sentence) {\n  return sentence.split(/,\\s+|;\\s+|\\s+(?:aber|but)\\s+/u).map(c => c.trim()).filter(Boolean);\n}\nconst esc = s => s.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n\n// Position of a word. Long words also inside compounds ('Haftpflichtversicherung'); 4-5 letters at the start\n// or end of a word ('Geschäftskonto'); 2-3 letters only as a whole word ('ug' is not in 'Führungszeugnis').\nfunction has(text, word) {\n  if (word.startsWith('^')) {\n    const m = text.match(rx('(?<!\\\\w)' + esc(word.slice(1)), 'u'));\n    return m ? m.index : -1;\n  }\n  if (word.length >= 6) return text.indexOf(word);\n  const w = esc(word);\n  const m = text.match(rx(word.length <= 3 ? `\\\\b${w}\\\\b` : `(?<!\\\\w)${w}|${w}(?!\\\\w)`, 'u'));\n  return m ? m.index : -1;\n}\n\n// Tasks a clause talks about, in the order they appear. A generic word only counts when nothing more specific\n// is there: 'Führungszeugnisse für beide Helfer liegen vor' is about the certificate.\nfunction mentioned(text, judged) {\n  const low = text.toLowerCase().replace(/antrag(s|es)? auf (anerkennung|zulassung)/gu, 'antrag');\n  const first = (task, weak) => {\n    const hits = task.words.filter(w => (WEAK[task.id] || []).includes(w) === weak).map(w => has(low, w)).filter(h => h >= 0);\n    return hits.length ? Math.min(...hits) : null;\n  };\n  let found = judged.map(t => [t.id, first(t, false)]).filter(([, p]) => p !== null);\n  if (!found.length) found = judged.map(t => [t.id, first(t, true)]).filter(([, p]) => p !== null);\n  return found.sort((a, b) => a[1] - b[1]).map(([id]) => id);\n}\n\nfunction addDays(iso, n) {\n  const d = new Date(iso + 'T00:00:00Z');\n  d.setUTCDate(d.getUTCDate() + n);\n  return d.toISOString().slice(0, 10);\n}\n\nfunction doneDate(text, received) {\n  const low = text.toLowerCase();\n  if (low.includes('vorgestern')) return addDays(received, -2);\n  if (low.includes('gestern') || low.includes('yesterday')) return addDays(received, -1);\n  const m = low.match(/(?<![\\p{L}\\p{N}_])am (\\d{1,2})\\.(\\d{1,2})\\./u);\n  if (m) {\n    const [day, month] = [Number(m[1]), Number(m[2])];\n    const d = new Date(Date.UTC(Number(received.slice(0, 4)), month - 1, day));\n    if (d.getUTCMonth() === month - 1 && d.getUTCDate() === day) return d.toISOString().slice(0, 10);\n  }\n  return received;\n}\n\n// 'Stand heute: 4 Kunden aktiv' -> 4. Not from plans ('hoffentlich 10 Kunden').\nfunction customerCount(message) {\n  for (const s of sentences(message)) {\n    if (NOT_DONE.test(s)) continue;\n    const m = s.match(CUSTOMERS);\n    if (m) {\n      const n = m[1].toLowerCase();\n      return /^\\d+$/.test(n) ? Number(n) : NUM[n];\n    }\n  }\n  return null;\n}\n\n// Step 1: rules. Returns the events in message order. Clauses the rules cannot decide become 'ai' events,\n// one per (clause, task) pair; questions[] is what goes to the AI.\nfunction ruleEvents(message, checklist) {\n  const judged = checklist.filter(t => t.id !== 'zehn_kunden');\n  const events = [];\n  const questions = [];\n  for (const s of sentences(message)) {\n    let previous = [];\n    for (const c of clauses(s)) {\n      const tasks = mentioned(c, judged);\n      if (!tasks.length) {\n        if (BLOCKED.test(c) && previous.length) {  // \"..., uns fehlt noch ein Formular\"\n          events.push({ kind: 'add', task: previous[0], status: 'blockiert', satz: s, how: 'Regel: Hindernis genannt', sentence: s });\n        }\n        continue;\n      }\n      previous = tasks;\n      if (BLOCKED.test(c)) {\n        events.push({ kind: 'add', task: tasks[0], status: 'blockiert', satz: c, how: 'Regel: Hindernis genannt', sentence: s });\n      } else if (NOT_DONE.test(c)) {\n        events.push({ kind: 'note', satz: c, tasks, grund: \"Plan, Frage oder 'noch nicht': keine Änderung\" });\n      } else if (DONE.test(c)) {\n        for (const t of tasks) events.push({ kind: 'add', task: t, status: 'erledigt', satz: c, how: 'Regel: als erledigt gemeldet', sentence: s });\n      } else if (!PAST.test(c)) {  // \"Die Startschulung machen wir im Dezember\": the AI once said done\n        events.push({ kind: 'note', satz: c, tasks, grund: 'keine Vergangenheit, kein Zustand: keine Änderung' });\n      } else {\n        for (const t of tasks) {\n          events.push({ kind: 'ai', q: questions.length, satz: c, task: t, sentence: s });\n          questions.push({ satz: c, task: t, titel: checklist.find(x => x.id === t).title });\n        }\n      }\n    }\n  }\n  return { events, questions };\n}\n\n// Step 2: replay the events with the AI's answers, then add the customer count and follow-on facts.\nfunction buildProposal(message, events, answers, received) {\n  const accepted = {};\n  const order = [];\n  const notes = [];\n  const add = (task, status, satz, how, sentence) => {\n    const old = accepted[task];\n    if (old && (old.status === 'erledigt' || status === 'blockiert')) return;  // \"done\" wins\n    if (!old) order.push(task);\n    accepted[task] = { task, status, satz, entschieden_von: how,\n      done_on: status === 'erledigt' ? doneDate(sentence, received) : null };\n  };\n  for (const e of events) {\n    if (e.kind === 'add') add(e.task, e.status, e.satz, e.how, e.sentence);\n    else if (e.kind === 'note') notes.push({ satz: e.satz, tasks: e.tasks, grund: e.grund });\n    else {\n      const a = answers[e.q] || { begruendung: 'ungültige Modellantwort', erledigt: false };\n      if (a.erledigt === true) add(e.task, 'erledigt', e.satz, `KI: ${a.begruendung}`, e.sentence);\n      else notes.push({ satz: e.satz, tasks: [e.task], grund: `KI: keine Änderung (${a.begruendung})` });\n    }\n  }\n  const customers = customerCount(message);\n  const derive = (task, why) => {\n    if ((accepted[task] || {}).status !== 'erledigt') {\n      if (!accepted[task]) order.push(task);\n      accepted[task] = { task, status: 'erledigt', satz: why, entschieden_von: 'Regel: Folgerung', done_on: received };\n    }\n  };\n  if ((accepted.zulassung || {}).status === 'erledigt') derive('antrag', 'Zulassung liegt vor, also wurde der Antrag gestellt');\n  if (customers && customers >= 1) derive('erster_kunde', `${customers} aktive Kunden, also hat der erste Einsatz stattgefunden`);\n  if (customers && customers >= 10) derive('zehn_kunden', `${customers} aktive Kunden`);\n  return { changes: order.map(t => accepted[t]), notes, active_customers: customers };\n}\n\n// The checklist comes from a data table: words are stored comma-separated.\nfunction checklistFromRows(rows) {\n  return rows.slice().sort((a, b) => a.nr - b.nr).map(r => ({\n    id: r.aufgabe, phase: r.phase, title: r.titel, due_day: r.faellig_tag, owner: r.zustaendig,\n    gate: r.vor_erstem_kunden === true, words: String(r.stichwoerter).split(',').map(w => w.trim()).filter(Boolean),\n  }));\n}\n\nconst input = $('Eingang vorbereiten').first().json;\nconst checklist = checklistFromRows($input.all().map(i => i.json));\nconst r = ruleEvents(input.nachricht, checklist);\nconst state = {events: r.events};\nif (!r.questions.length) return [{json: {ki_noetig: false, state}}];\nreturn r.questions.map((q, i) => ({json: {ki_noetig: true, frage_nr: i, satz: q.satz, aufgabe: q.task, titel: q.titel,\n  state: i === 0 ? state : null}}));\n"
+   },
+   "id": "e2aad80d-8711-5400-a708-026d8dc29c63",
+   "name": "Regeln: Satzteile und Punkte",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    240,
+    100
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "loose",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "79fda3a1-f96c-57c3-90f2-e9c2a12ecdb8",
+       "leftValue": "={{ $json.ki_noetig }}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "2cb04a52-9fa9-5f2b-87e0-16949bda8133",
+   "name": "KI nötig?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    480,
+    100
+   ]
+  },
+  {
+   "parameters": {
+    "promptType": "define",
+    "text": "=Checklisten-Punkt: {{ $json.titel }}\nSatzteil des Partners: {{ $json.satz }}",
+    "hasOutputParser": true,
+    "messages": {
+     "messageValues": [
+      {
+       "type": "SystemMessagePromptTemplate",
+       "message": "Du hilfst dem Partnermanagement eines Franchise für Alltagshilfe. Ein neuer Partner schreibt ein Update. Du bekommst einen Satzteil aus seiner Nachricht und einen Punkt seiner Checkliste. erledigt=true nur, wenn der Satzteil meldet, dass genau dieser Punkt schon passiert ist. Bei Plänen, Fragen, Terminen in der Zukunft, oder wenn der Punkt nur nebenbei vorkommt: erledigt=false. begruendung: ein kurzer Halbsatz."
+      }
+     ]
+    }
+   },
+   "id": "3ffaaf68-378b-5af0-a4ae-b8ec4723b07d",
+   "name": "KI: Ist der Punkt erledigt?",
+   "type": "@n8n/n8n-nodes-langchain.chainLlm",
+   "typeVersion": 1.9,
+   "position": [
+    760,
+    0
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "model": "qwen2.5:3b",
+    "options": {
+     "temperature": 0,
+     "numPredict": 200,
+     "format": "json",
+     "think": false
+    }
+   },
+   "id": "27baf91c-3f6b-522f-b398-969c6454d4c8",
+   "name": "Ollama (lokal)",
+   "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+   "typeVersion": 1,
+   "position": [
+    700,
+    220
+   ],
+   "credentials": {
+    "ollamaApi": {
+     "id": "HCollamaLokal001",
+     "name": "Ollama lokal (qwen2.5:3b)"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "schemaType": "manual",
+    "inputSchema": "{\n \"type\": \"object\",\n \"properties\": {\n  \"begruendung\": {\n   \"type\": \"string\",\n   \"description\": \"ein kurzer Halbsatz\"\n  },\n  \"erledigt\": {\n   \"type\": \"boolean\"\n  }\n },\n \"required\": [\n  \"begruendung\",\n  \"erledigt\"\n ]\n}"
+   },
+   "id": "7fbafc19-c436-5094-b787-48bde9c28e7a",
+   "name": "Antwortformat: Begründung + ja/nein",
+   "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+   "typeVersion": 1.3,
+   "position": [
+    880,
+    220
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// Partner update -> proposed checklist changes. Same logic as app/updates.py, written for n8n Code nodes.\n// Code splits the message and finds the tasks; clear wording is decided by rules; only unclear clauses go to\n// the AI (one small question each). Nothing here changes the checklist: a person approves later.\n\n// JavaScript's \\b and \\w only know a-z. German needs ä, ö, ü, ß, so both are rebuilt with Unicode classes.\nconst WORD = '[\\\\p{L}\\\\p{N}_]';\nconst BOUNDARY = `(?:(?<=${WORD})(?!${WORD})|(?<!${WORD})(?=${WORD}))`;\nfunction rx(source, flags = 'iu') {\n  return new RegExp(source.replace(/\\\\b/g, BOUNDARY).replace(/\\\\w/g, WORD), flags);\n}\n\nconst BLOCKED = rx('leider|abgesagt|abgesprungen|abgelehnt|fehlt|fehlen|nachgefordert|immer noch nicht|' +\n  'warten immer noch|zickt|klappt( es)?( leider)? nicht|keine passenden|problem|cancel+ed|rejected|refused|missing');\nconst NOT_DONE = rx('\\\\b(noch nicht|nicht|kein|keine|keinen|werden|wird|planen|geplant|nächste[nrs]?|bald|' +\n  'morgen|hoffentlich|sobald|demnächst|wollen|möchten|soll|dauert noch|' +\n  'not|no|will|plan|planned|next|soon|tomorrow|hope)\\\\b|\\\\?');\nconst DONE = rx('\\\\b(abgeschlossen|eröffnet|angemeldet|eingestellt|angemietet|gegründet|verteilt|erschienen|' +\n  'gekommen|online|aktiv|eingerichtet|raus|liegt vor|liegen vor|ist da|sind da|zugelassen|anerkannt|' +\n  'teilgenommen|besucht|stattgefunden|signed|done|open|ready|hired|approved|registered|completed)\\\\b');\n// The AI may only call something done in a clause that reports the past or a state.\nconst PAST = rx('\\\\b(ist|sind|war|waren|wurde|wurden|hat|haben|hatten|seit|bereits|schon|' +\n  'is|are|was|were|has|have|had|already)\\\\b|\\\\bge\\\\w+[t|n]\\\\b|\\\\w+ed\\\\b');\nconst NUM = { ersten: 1, zwei: 2, drei: 3, vier: 4, 'fünf': 5, sechs: 6, sieben: 7, acht: 8, neun: 9,\n  zehn: 10, elf: 11, 'zwölf': 12 };\nconst CUSTOMERS = rx('\\\\b(\\\\d{1,3}|' + Object.keys(NUM).join('|') + ')\\\\s+(?:aktive[n]?\\\\s+)?(kunden|kundinnen|kunde|kundin|' +\n  'customers|clients)\\\\b');\n// Generic words: they mention a task in passing more often than they report on it.\nconst WEAK = { helfer: ['helfer', 'mitarbeiter', 'personal', 'staff', 'carer', 'helper'],\n  erster_kunde: ['kunde', 'kundin', 'customer', 'client'], software: ['software'] };\n\nfunction sentences(text) {\n  return text.split(/(?<=[.!?])\\s+|\\n+/u).map(s => s.trim()).filter(Boolean);\n}\nfunction clauses(sentence) {\n  return sentence.split(/,\\s+|;\\s+|\\s+(?:aber|but)\\s+/u).map(c => c.trim()).filter(Boolean);\n}\nconst esc = s => s.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n\n// Position of a word. Long words also inside compounds ('Haftpflichtversicherung'); 4-5 letters at the start\n// or end of a word ('Geschäftskonto'); 2-3 letters only as a whole word ('ug' is not in 'Führungszeugnis').\nfunction has(text, word) {\n  if (word.startsWith('^')) {\n    const m = text.match(rx('(?<!\\\\w)' + esc(word.slice(1)), 'u'));\n    return m ? m.index : -1;\n  }\n  if (word.length >= 6) return text.indexOf(word);\n  const w = esc(word);\n  const m = text.match(rx(word.length <= 3 ? `\\\\b${w}\\\\b` : `(?<!\\\\w)${w}|${w}(?!\\\\w)`, 'u'));\n  return m ? m.index : -1;\n}\n\n// Tasks a clause talks about, in the order they appear. A generic word only counts when nothing more specific\n// is there: 'Führungszeugnisse für beide Helfer liegen vor' is about the certificate.\nfunction mentioned(text, judged) {\n  const low = text.toLowerCase().replace(/antrag(s|es)? auf (anerkennung|zulassung)/gu, 'antrag');\n  const first = (task, weak) => {\n    const hits = task.words.filter(w => (WEAK[task.id] || []).includes(w) === weak).map(w => has(low, w)).filter(h => h >= 0);\n    return hits.length ? Math.min(...hits) : null;\n  };\n  let found = judged.map(t => [t.id, first(t, false)]).filter(([, p]) => p !== null);\n  if (!found.length) found = judged.map(t => [t.id, first(t, true)]).filter(([, p]) => p !== null);\n  return found.sort((a, b) => a[1] - b[1]).map(([id]) => id);\n}\n\nfunction addDays(iso, n) {\n  const d = new Date(iso + 'T00:00:00Z');\n  d.setUTCDate(d.getUTCDate() + n);\n  return d.toISOString().slice(0, 10);\n}\n\nfunction doneDate(text, received) {\n  const low = text.toLowerCase();\n  if (low.includes('vorgestern')) return addDays(received, -2);\n  if (low.includes('gestern') || low.includes('yesterday')) return addDays(received, -1);\n  const m = low.match(/(?<![\\p{L}\\p{N}_])am (\\d{1,2})\\.(\\d{1,2})\\./u);\n  if (m) {\n    const [day, month] = [Number(m[1]), Number(m[2])];\n    const d = new Date(Date.UTC(Number(received.slice(0, 4)), month - 1, day));\n    if (d.getUTCMonth() === month - 1 && d.getUTCDate() === day) return d.toISOString().slice(0, 10);\n  }\n  return received;\n}\n\n// 'Stand heute: 4 Kunden aktiv' -> 4. Not from plans ('hoffentlich 10 Kunden').\nfunction customerCount(message) {\n  for (const s of sentences(message)) {\n    if (NOT_DONE.test(s)) continue;\n    const m = s.match(CUSTOMERS);\n    if (m) {\n      const n = m[1].toLowerCase();\n      return /^\\d+$/.test(n) ? Number(n) : NUM[n];\n    }\n  }\n  return null;\n}\n\n// Step 1: rules. Returns the events in message order. Clauses the rules cannot decide become 'ai' events,\n// one per (clause, task) pair; questions[] is what goes to the AI.\nfunction ruleEvents(message, checklist) {\n  const judged = checklist.filter(t => t.id !== 'zehn_kunden');\n  const events = [];\n  const questions = [];\n  for (const s of sentences(message)) {\n    let previous = [];\n    for (const c of clauses(s)) {\n      const tasks = mentioned(c, judged);\n      if (!tasks.length) {\n        if (BLOCKED.test(c) && previous.length) {  // \"..., uns fehlt noch ein Formular\"\n          events.push({ kind: 'add', task: previous[0], status: 'blockiert', satz: s, how: 'Regel: Hindernis genannt', sentence: s });\n        }\n        continue;\n      }\n      previous = tasks;\n      if (BLOCKED.test(c)) {\n        events.push({ kind: 'add', task: tasks[0], status: 'blockiert', satz: c, how: 'Regel: Hindernis genannt', sentence: s });\n      } else if (NOT_DONE.test(c)) {\n        events.push({ kind: 'note', satz: c, tasks, grund: \"Plan, Frage oder 'noch nicht': keine Änderung\" });\n      } else if (DONE.test(c)) {\n        for (const t of tasks) events.push({ kind: 'add', task: t, status: 'erledigt', satz: c, how: 'Regel: als erledigt gemeldet', sentence: s });\n      } else if (!PAST.test(c)) {  // \"Die Startschulung machen wir im Dezember\": the AI once said done\n        events.push({ kind: 'note', satz: c, tasks, grund: 'keine Vergangenheit, kein Zustand: keine Änderung' });\n      } else {\n        for (const t of tasks) {\n          events.push({ kind: 'ai', q: questions.length, satz: c, task: t, sentence: s });\n          questions.push({ satz: c, task: t, titel: checklist.find(x => x.id === t).title });\n        }\n      }\n    }\n  }\n  return { events, questions };\n}\n\n// Step 2: replay the events with the AI's answers, then add the customer count and follow-on facts.\nfunction buildProposal(message, events, answers, received) {\n  const accepted = {};\n  const order = [];\n  const notes = [];\n  const add = (task, status, satz, how, sentence) => {\n    const old = accepted[task];\n    if (old && (old.status === 'erledigt' || status === 'blockiert')) return;  // \"done\" wins\n    if (!old) order.push(task);\n    accepted[task] = { task, status, satz, entschieden_von: how,\n      done_on: status === 'erledigt' ? doneDate(sentence, received) : null };\n  };\n  for (const e of events) {\n    if (e.kind === 'add') add(e.task, e.status, e.satz, e.how, e.sentence);\n    else if (e.kind === 'note') notes.push({ satz: e.satz, tasks: e.tasks, grund: e.grund });\n    else {\n      const a = answers[e.q] || { begruendung: 'ungültige Modellantwort', erledigt: false };\n      if (a.erledigt === true) add(e.task, 'erledigt', e.satz, `KI: ${a.begruendung}`, e.sentence);\n      else notes.push({ satz: e.satz, tasks: [e.task], grund: `KI: keine Änderung (${a.begruendung})` });\n    }\n  }\n  const customers = customerCount(message);\n  const derive = (task, why) => {\n    if ((accepted[task] || {}).status !== 'erledigt') {\n      if (!accepted[task]) order.push(task);\n      accepted[task] = { task, status: 'erledigt', satz: why, entschieden_von: 'Regel: Folgerung', done_on: received };\n    }\n  };\n  if ((accepted.zulassung || {}).status === 'erledigt') derive('antrag', 'Zulassung liegt vor, also wurde der Antrag gestellt');\n  if (customers && customers >= 1) derive('erster_kunde', `${customers} aktive Kunden, also hat der erste Einsatz stattgefunden`);\n  if (customers && customers >= 10) derive('zehn_kunden', `${customers} aktive Kunden`);\n  return { changes: order.map(t => accepted[t]), notes, active_customers: customers };\n}\n\n// The checklist comes from a data table: words are stored comma-separated.\nfunction checklistFromRows(rows) {\n  return rows.slice().sort((a, b) => a.nr - b.nr).map(r => ({\n    id: r.aufgabe, phase: r.phase, title: r.titel, due_day: r.faellig_tag, owner: r.zustaendig,\n    gate: r.vor_erstem_kunden === true, words: String(r.stichwoerter).split(',').map(w => w.trim()).filter(Boolean),\n  }));\n}\n\nconst input = $('Eingang vorbereiten').first().json;\nconst first = $('Regeln: Satzteile und Punkte').first().json;\nlet answers = [];\nif (first.ki_noetig) {\n  answers = $input.all().map(it => {\n    const o = it.json.output;\n    return o && typeof o.erledigt === 'boolean'\n      ? {begruendung: String(o.begruendung || '').trim(), erledigt: o.erledigt}\n      : {begruendung: 'ungültige Modellantwort', erledigt: false};\n  });\n}\nconst received = $now.setZone('Europe/Berlin').toISODate();\nconst p = buildProposal(input.nachricht, first.state.events, answers, received);\nreturn [{json: {...input, ...p, ki_fragen: answers.length}}];\n"
+   },
+   "id": "06e0cc79-0c9e-59dd-89b5-fd63d91b0074",
+   "name": "Vorschlag zusammensetzen",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1100,
+    100
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "checkIfEvaluating"
+   },
+   "id": "6a298ca8-9b4a-54c5-91ab-28eedddcc419",
+   "name": "Test oder echt?",
+   "type": "n8n-nodes-base.evaluation",
+   "typeVersion": 4.8,
+   "position": [
+    1340,
+    100
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const j = $json;\nconst got = Object.fromEntries(j.changes.map(c => [c.task, c.status]));\nconst exp = JSON.parse(j.erwartet || '{}');\nconst expCustomers = j.kunden_erwartet === '' || j.kunden_erwartet == null ? null : Number(j.kunden_erwartet);\nconst sorted = o => JSON.stringify(Object.keys(o).sort().map(k => [k, o[k]]));\nconst correct = sorted(got) === sorted(exp) && j.active_customers === expCustomers;\nconst wrongDone = Object.keys(got).filter(k => got[k] === 'erledigt' && exp[k] !== 'erledigt');\nconst fmt = o => Object.entries(o).map(([k, v]) => k + '=' + v).join(', ') || 'keine';\nreturn {json: {korrekt: correct ? 1 : 0, falsch_erledigt: wrongDone.length, testset: j.testset,\n  vorgeschlagen: fmt(got) + (j.active_customers != null ? ` (Kunden ${j.active_customers})` : ''),\n  erwartet: fmt(exp) + (expCustomers != null ? ` (Kunden ${expCustomers})` : '')}};\n",
+    "mode": "runOnceForEachItem"
+   },
+   "id": "f58faebb-8c19-57f8-8b60-c4d3b69444ed",
+   "name": "Mit Erwartung vergleichen",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1600,
+    -160
+   ]
+  },
+  {
+   "parameters": {
+    "operation": "setMetrics",
+    "metric": "customMetrics",
+    "metrics": {
+     "assignments": [
+      {
+       "id": "22067781-15ef-515c-9f36-ecb10582cbc1",
+       "name": "korrekt",
+       "value": "={{ $json.korrekt }}",
+       "type": "number"
+      },
+      {
+       "id": "a2efbefe-f035-59ca-bc71-99548d332c1c",
+       "name": "falsch_erledigt",
+       "value": "={{ $json.falsch_erledigt }}",
+       "type": "number"
+      }
+     ]
+    }
+   },
+   "id": "4425be6d-bc4f-549c-8dfc-4538055006f0",
+   "name": "Kennzahlen für den Test",
+   "type": "n8n-nodes-base.evaluation",
+   "typeVersion": 4.8,
+   "position": [
+    1840,
+    -160
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "loose",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "13cf4a95-b5e4-5fd2-a3d5-df5987cb499f",
+       "leftValue": "={{ $json.nur_testen }}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "55042fb4-0c62-5dba-b9c1-22ceac9a0c9b",
+   "name": "Nur testen?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    1600,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ JSON.stringify({ ok: true, nur_test: true, aenderungen: $json.changes, keine_aenderung: $json.notes, kunden: $json.active_customers }) }}",
+    "options": {
+     "responseCode": 200
+    }
+   },
+   "id": "73d377cb-ce24-5883-b038-cc52aaf6a718",
+   "name": "Antwort: nur Vorschlag (nichts gespeichert)",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.1,
+   "position": [
+    1840,
+    40
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "get",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_partner"
+    },
+    "matchType": "allConditions",
+    "filters": {
+     "conditions": [
+      {
+       "keyName": "partner_id",
+       "condition": "eq",
+       "keyValue": "={{ $('Vorschlag zusammensetzen').first().json.partner_id }}"
+      }
+     ]
+    },
+    "returnAll": true
+   },
+   "id": "28f10b76-fed9-53f0-82a7-fbc5007e9280",
+   "name": "Partner laden",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    1840,
+    260
+   ],
+   "executeOnce": true,
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "get",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_aufgaben"
+    },
+    "matchType": "allConditions",
+    "filters": {
+     "conditions": [
+      {
+       "keyName": "partner_id",
+       "condition": "eq",
+       "keyValue": "={{ $('Vorschlag zusammensetzen').first().json.partner_id }}"
+      }
+     ]
+    },
+    "returnAll": true
+   },
+   "id": "e452aa15-43ba-50c7-9a6a-c7955ec5be05",
+   "name": "Aufgaben des Partners laden",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    2060,
+    260
+   ],
+   "executeOnce": true,
+   "alwaysOutputData": true
+  },
+  {
+   "parameters": {
+    "jsCode": "// Partner update -> proposed checklist changes. Same logic as app/updates.py, written for n8n Code nodes.\n// Code splits the message and finds the tasks; clear wording is decided by rules; only unclear clauses go to\n// the AI (one small question each). Nothing here changes the checklist: a person approves later.\n\n// JavaScript's \\b and \\w only know a-z. German needs ä, ö, ü, ß, so both are rebuilt with Unicode classes.\nconst WORD = '[\\\\p{L}\\\\p{N}_]';\nconst BOUNDARY = `(?:(?<=${WORD})(?!${WORD})|(?<!${WORD})(?=${WORD}))`;\nfunction rx(source, flags = 'iu') {\n  return new RegExp(source.replace(/\\\\b/g, BOUNDARY).replace(/\\\\w/g, WORD), flags);\n}\n\nconst BLOCKED = rx('leider|abgesagt|abgesprungen|abgelehnt|fehlt|fehlen|nachgefordert|immer noch nicht|' +\n  'warten immer noch|zickt|klappt( es)?( leider)? nicht|keine passenden|problem|cancel+ed|rejected|refused|missing');\nconst NOT_DONE = rx('\\\\b(noch nicht|nicht|kein|keine|keinen|werden|wird|planen|geplant|nächste[nrs]?|bald|' +\n  'morgen|hoffentlich|sobald|demnächst|wollen|möchten|soll|dauert noch|' +\n  'not|no|will|plan|planned|next|soon|tomorrow|hope)\\\\b|\\\\?');\nconst DONE = rx('\\\\b(abgeschlossen|eröffnet|angemeldet|eingestellt|angemietet|gegründet|verteilt|erschienen|' +\n  'gekommen|online|aktiv|eingerichtet|raus|liegt vor|liegen vor|ist da|sind da|zugelassen|anerkannt|' +\n  'teilgenommen|besucht|stattgefunden|signed|done|open|ready|hired|approved|registered|completed)\\\\b');\n// The AI may only call something done in a clause that reports the past or a state.\nconst PAST = rx('\\\\b(ist|sind|war|waren|wurde|wurden|hat|haben|hatten|seit|bereits|schon|' +\n  'is|are|was|were|has|have|had|already)\\\\b|\\\\bge\\\\w+[t|n]\\\\b|\\\\w+ed\\\\b');\nconst NUM = { ersten: 1, zwei: 2, drei: 3, vier: 4, 'fünf': 5, sechs: 6, sieben: 7, acht: 8, neun: 9,\n  zehn: 10, elf: 11, 'zwölf': 12 };\nconst CUSTOMERS = rx('\\\\b(\\\\d{1,3}|' + Object.keys(NUM).join('|') + ')\\\\s+(?:aktive[n]?\\\\s+)?(kunden|kundinnen|kunde|kundin|' +\n  'customers|clients)\\\\b');\n// Generic words: they mention a task in passing more often than they report on it.\nconst WEAK = { helfer: ['helfer', 'mitarbeiter', 'personal', 'staff', 'carer', 'helper'],\n  erster_kunde: ['kunde', 'kundin', 'customer', 'client'], software: ['software'] };\n\nfunction sentences(text) {\n  return text.split(/(?<=[.!?])\\s+|\\n+/u).map(s => s.trim()).filter(Boolean);\n}\nfunction clauses(sentence) {\n  return sentence.split(/,\\s+|;\\s+|\\s+(?:aber|but)\\s+/u).map(c => c.trim()).filter(Boolean);\n}\nconst esc = s => s.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n\n// Position of a word. Long words also inside compounds ('Haftpflichtversicherung'); 4-5 letters at the start\n// or end of a word ('Geschäftskonto'); 2-3 letters only as a whole word ('ug' is not in 'Führungszeugnis').\nfunction has(text, word) {\n  if (word.startsWith('^')) {\n    const m = text.match(rx('(?<!\\\\w)' + esc(word.slice(1)), 'u'));\n    return m ? m.index : -1;\n  }\n  if (word.length >= 6) return text.indexOf(word);\n  const w = esc(word);\n  const m = text.match(rx(word.length <= 3 ? `\\\\b${w}\\\\b` : `(?<!\\\\w)${w}|${w}(?!\\\\w)`, 'u'));\n  return m ? m.index : -1;\n}\n\n// Tasks a clause talks about, in the order they appear. A generic word only counts when nothing more specific\n// is there: 'Führungszeugnisse für beide Helfer liegen vor' is about the certificate.\nfunction mentioned(text, judged) {\n  const low = text.toLowerCase().replace(/antrag(s|es)? auf (anerkennung|zulassung)/gu, 'antrag');\n  const first = (task, weak) => {\n    const hits = task.words.filter(w => (WEAK[task.id] || []).includes(w) === weak).map(w => has(low, w)).filter(h => h >= 0);\n    return hits.length ? Math.min(...hits) : null;\n  };\n  let found = judged.map(t => [t.id, first(t, false)]).filter(([, p]) => p !== null);\n  if (!found.length) found = judged.map(t => [t.id, first(t, true)]).filter(([, p]) => p !== null);\n  return found.sort((a, b) => a[1] - b[1]).map(([id]) => id);\n}\n\nfunction addDays(iso, n) {\n  const d = new Date(iso + 'T00:00:00Z');\n  d.setUTCDate(d.getUTCDate() + n);\n  return d.toISOString().slice(0, 10);\n}\n\nfunction doneDate(text, received) {\n  const low = text.toLowerCase();\n  if (low.includes('vorgestern')) return addDays(received, -2);\n  if (low.includes('gestern') || low.includes('yesterday')) return addDays(received, -1);\n  const m = low.match(/(?<![\\p{L}\\p{N}_])am (\\d{1,2})\\.(\\d{1,2})\\./u);\n  if (m) {\n    const [day, month] = [Number(m[1]), Number(m[2])];\n    const d = new Date(Date.UTC(Number(received.slice(0, 4)), month - 1, day));\n    if (d.getUTCMonth() === month - 1 && d.getUTCDate() === day) return d.toISOString().slice(0, 10);\n  }\n  return received;\n}\n\n// 'Stand heute: 4 Kunden aktiv' -> 4. Not from plans ('hoffentlich 10 Kunden').\nfunction customerCount(message) {\n  for (const s of sentences(message)) {\n    if (NOT_DONE.test(s)) continue;\n    const m = s.match(CUSTOMERS);\n    if (m) {\n      const n = m[1].toLowerCase();\n      return /^\\d+$/.test(n) ? Number(n) : NUM[n];\n    }\n  }\n  return null;\n}\n\n// Step 1: rules. Returns the events in message order. Clauses the rules cannot decide become 'ai' events,\n// one per (clause, task) pair; questions[] is what goes to the AI.\nfunction ruleEvents(message, checklist) {\n  const judged = checklist.filter(t => t.id !== 'zehn_kunden');\n  const events = [];\n  const questions = [];\n  for (const s of sentences(message)) {\n    let previous = [];\n    for (const c of clauses(s)) {\n      const tasks = mentioned(c, judged);\n      if (!tasks.length) {\n        if (BLOCKED.test(c) && previous.length) {  // \"..., uns fehlt noch ein Formular\"\n          events.push({ kind: 'add', task: previous[0], status: 'blockiert', satz: s, how: 'Regel: Hindernis genannt', sentence: s });\n        }\n        continue;\n      }\n      previous = tasks;\n      if (BLOCKED.test(c)) {\n        events.push({ kind: 'add', task: tasks[0], status: 'blockiert', satz: c, how: 'Regel: Hindernis genannt', sentence: s });\n      } else if (NOT_DONE.test(c)) {\n        events.push({ kind: 'note', satz: c, tasks, grund: \"Plan, Frage oder 'noch nicht': keine Änderung\" });\n      } else if (DONE.test(c)) {\n        for (const t of tasks) events.push({ kind: 'add', task: t, status: 'erledigt', satz: c, how: 'Regel: als erledigt gemeldet', sentence: s });\n      } else if (!PAST.test(c)) {  // \"Die Startschulung machen wir im Dezember\": the AI once said done\n        events.push({ kind: 'note', satz: c, tasks, grund: 'keine Vergangenheit, kein Zustand: keine Änderung' });\n      } else {\n        for (const t of tasks) {\n          events.push({ kind: 'ai', q: questions.length, satz: c, task: t, sentence: s });\n          questions.push({ satz: c, task: t, titel: checklist.find(x => x.id === t).title });\n        }\n      }\n    }\n  }\n  return { events, questions };\n}\n\n// Step 2: replay the events with the AI's answers, then add the customer count and follow-on facts.\nfunction buildProposal(message, events, answers, received) {\n  const accepted = {};\n  const order = [];\n  const notes = [];\n  const add = (task, status, satz, how, sentence) => {\n    const old = accepted[task];\n    if (old && (old.status === 'erledigt' || status === 'blockiert')) return;  // \"done\" wins\n    if (!old) order.push(task);\n    accepted[task] = { task, status, satz, entschieden_von: how,\n      done_on: status === 'erledigt' ? doneDate(sentence, received) : null };\n  };\n  for (const e of events) {\n    if (e.kind === 'add') add(e.task, e.status, e.satz, e.how, e.sentence);\n    else if (e.kind === 'note') notes.push({ satz: e.satz, tasks: e.tasks, grund: e.grund });\n    else {\n      const a = answers[e.q] || { begruendung: 'ungültige Modellantwort', erledigt: false };\n      if (a.erledigt === true) add(e.task, 'erledigt', e.satz, `KI: ${a.begruendung}`, e.sentence);\n      else notes.push({ satz: e.satz, tasks: [e.task], grund: `KI: keine Änderung (${a.begruendung})` });\n    }\n  }\n  const customers = customerCount(message);\n  const derive = (task, why) => {\n    if ((accepted[task] || {}).status !== 'erledigt') {\n      if (!accepted[task]) order.push(task);\n      accepted[task] = { task, status: 'erledigt', satz: why, entschieden_von: 'Regel: Folgerung', done_on: received };\n    }\n  };\n  if ((accepted.zulassung || {}).status === 'erledigt') derive('antrag', 'Zulassung liegt vor, also wurde der Antrag gestellt');\n  if (customers && customers >= 1) derive('erster_kunde', `${customers} aktive Kunden, also hat der erste Einsatz stattgefunden`);\n  if (customers && customers >= 10) derive('zehn_kunden', `${customers} aktive Kunden`);\n  return { changes: order.map(t => accepted[t]), notes, active_customers: customers };\n}\n\n// The checklist comes from a data table: words are stored comma-separated.\nfunction checklistFromRows(rows) {\n  return rows.slice().sort((a, b) => a.nr - b.nr).map(r => ({\n    id: r.aufgabe, phase: r.phase, title: r.titel, due_day: r.faellig_tag, owner: r.zustaendig,\n    gate: r.vor_erstem_kunden === true, words: String(r.stichwoerter).split(',').map(w => w.trim()).filter(Boolean),\n  }));\n}\n\nconst p = $('Vorschlag zusammensetzen').first().json;\nconst partner = $('Partner laden').all().map(i => i.json).find(r => r.partner_id === p.partner_id);\nif (!partner) return [{json: {ok: false, fehler: `Partner ${p.partner_id} unbekannt`}}];\nconst checklist = checklistFromRows($('Checkliste laden').all().map(i => i.json));\nconst title = Object.fromEntries(checklist.map(t => [t.id, t.title]));\nconst tasks = Object.fromEntries($('Aufgaben des Partners laden').all().map(i => [i.json.aufgabe, i.json]));\nconst changes = [], skipped = [];\nfor (const c of p.changes) {\n  if (tasks[c.task].status === c.status) skipped.push({...c, tasks: [c.task], grund: 'steht schon so in der Checkliste'});\n  else changes.push({...c, titel: title[c.task], vorher: tasks[c.task].status});\n}\n// Customers reported while a must-have (insurance, permit, background check, templates) is still open.\nconst after = Object.fromEntries(Object.entries(tasks).map(([k, v]) => [k, v.status]));\nfor (const c of changes) after[c.task] = c.status;\nconst warnings = [];\nif (after.erster_kunde === 'erledigt') {\n  const missing = checklist.filter(t => t.gate && after[t.id] !== 'erledigt').map(t => t.title);\n  if (missing.length) warnings.push('Partner meldet Kundeneinsätze, aber laut Checkliste fehlt noch: ' + missing.join(', ') +\n    '. Bitte sofort klären, bevor weitere Einsätze stattfinden.');\n}\nconst lines = changes.map(c => `• ${c.titel}: ${c.vorher} → ${c.status}  (Beleg: „${c.satz}“, ${c.entschieden_von})`);\nconst desc = `Nachricht: „${p.nachricht}“\\n\\nVorgeschlagene Änderungen:\\n` + (lines.join('\\n') || '• keine') +\n  (p.active_customers != null ? `\\n• Aktive Kunden: ${partner.aktive_kunden} → ${p.active_customers}` : '') +\n  (warnings.length ? '\\n\\n⚠️ ' + warnings.join(' ') : '');\nreturn [{json: {ok: true, partner_id: p.partner_id, stadt: partner.stadt, eingegangen: p.eingegangen, nachricht: p.nachricht,\n  aenderungen: JSON.stringify(changes), keine_aenderung: JSON.stringify([...p.notes, ...skipped]),\n  warnungen: JSON.stringify(warnings), kunden: p.active_customers == null ? '' : String(p.active_customers),\n  status: 'offen', entschieden_von: '', entschieden_am: '', freigabe_url: $execution.resumeFormUrl,\n  beschreibung: desc, kunden_vorher: partner.aktive_kunden, changes, warnings}}];\n"
+   },
+   "id": "f8aa2996-c242-56bb-b08d-4a410537b8f1",
+   "name": "Mit Checkliste abgleichen",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2280,
+    260
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "loose",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "5aa6625e-952d-5c1f-8630-fc49a857d618",
+       "leftValue": "={{ $json.ok }}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "f36f8209-2c38-5a01-8c2c-a550e02613ea",
+   "name": "Partner bekannt?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    2500,
+    260
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ JSON.stringify({ ok: false, fehler: $json.fehler }) }}",
+    "options": {
+     "responseCode": 404
+    }
+   },
+   "id": "cd24e187-dc2e-58fa-a53d-db5c18472d4d",
+   "name": "Antwort: Partner unbekannt",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.1,
+   "position": [
+    2720,
+    460
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "insert",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_vorschlaege"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "partner_id": "={{ $json.partner_id }}",
+      "stadt": "={{ $json.stadt }}",
+      "eingegangen": "={{ $json.eingegangen }}",
+      "nachricht": "={{ $json.nachricht }}",
+      "aenderungen": "={{ $json.aenderungen }}",
+      "keine_aenderung": "={{ $json.keine_aenderung }}",
+      "warnungen": "={{ $json.warnungen }}",
+      "kunden": "={{ $json.kunden }}",
+      "status": "={{ $json.status }}",
+      "entschieden_von": "={{ $json.entschieden_von }}",
+      "entschieden_am": "={{ $json.entschieden_am }}",
+      "freigabe_url": "={{ $json.freigabe_url }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "partner_id",
+       "displayName": "partner_id",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "number",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "stadt",
+       "displayName": "stadt",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "eingegangen",
+       "displayName": "eingegangen",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "nachricht",
+       "displayName": "nachricht",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "aenderungen",
+       "displayName": "aenderungen",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "keine_aenderung",
+       "displayName": "keine_aenderung",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "warnungen",
+       "displayName": "warnungen",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "kunden",
+       "displayName": "kunden",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "status",
+       "displayName": "status",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "entschieden_von",
+       "displayName": "entschieden_von",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "entschieden_am",
+       "displayName": "entschieden_am",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "freigabe_url",
+       "displayName": "freigabe_url",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "id": "2481777a-87ee-5679-aa05-3a6952ecf0f8",
+   "name": "Vorschlag speichern",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    2720,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "insert",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_protokoll"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "zeit": "={{ $now.toISO() }}",
+      "partner_id": "={{ $('Mit Checkliste abgleichen').first().json.partner_id }}",
+      "stadt": "={{ $('Mit Checkliste abgleichen').first().json.stadt }}",
+      "wer": "E-Mail des Partners",
+      "aktion": "Update eingegangen",
+      "details": "={{ 'Vorschlag #' + $('Vorschlag speichern').first().json.id + ': ' + $('Mit Checkliste abgleichen').first().json.changes.length + ' Änderung(en), ' + $('Mit Checkliste abgleichen').first().json.warnings.length + ' Warnung(en)' }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "zeit",
+       "displayName": "zeit",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "partner_id",
+       "displayName": "partner_id",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "number",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "stadt",
+       "displayName": "stadt",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "wer",
+       "displayName": "wer",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "aktion",
+       "displayName": "aktion",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "details",
+       "displayName": "details",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "id": "a2085904-8427-5ca2-acba-ab84bfc909fe",
+   "name": "Protokoll: Update eingegangen",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    2940,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ JSON.stringify({ ok: true, vorschlag_nr: $('Vorschlag speichern').first().json.id, stadt: $('Mit Checkliste abgleichen').first().json.stadt, aenderungen: $('Mit Checkliste abgleichen').first().json.changes, warnungen: $('Mit Checkliste abgleichen').first().json.warnings, kunden: $('Mit Checkliste abgleichen').first().json.kunden, hinweis: 'Noch nichts geändert. Freigabe über freigabe_url.', freigabe_url: $('Mit Checkliste abgleichen').first().json.freigabe_url }) }}",
+    "options": {
+     "responseCode": 200
+    }
+   },
+   "id": "82d45219-b71b-5e3c-92c4-5966ac9ac32b",
+   "name": "Antwort: Vorschlag gespeichert",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.1,
+   "position": [
+    3160,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "resume": "form",
+    "formTitle": "={{ 'Partner-Update ' + $('Mit Checkliste abgleichen').first().json.stadt + ' prüfen' }}",
+    "formDescription": "={{ $('Mit Checkliste abgleichen').first().json.beschreibung }}",
+    "formFields": {
+     "values": [
+      {
+       "fieldLabel": "Ihr Name",
+       "placeholder": "z. B. Frau Becker",
+       "requiredField": true
+      },
+      {
+       "fieldLabel": "Entscheidung",
+       "fieldType": "dropdown",
+       "requiredField": true,
+       "fieldOptions": {
+        "values": [
+         {
+          "option": "Alle Änderungen übernehmen"
+         },
+         {
+          "option": "Ablehnen"
+         }
+        ]
+       }
+      }
+     ]
+    },
+    "responseMode": "onReceived",
+    "options": {
+     "respondWithOptions": {
+      "values": {
+       "respondWith": "text",
+       "formSubmittedText": "Gespeichert. Die Entscheidung steht im Protokoll."
+      }
+     }
+    }
+   },
+   "id": "896ea174-ae29-51f4-936f-4a4c03a1d193",
+   "name": "Warten auf Freigabe (Formular)",
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    3380,
+    200
+   ],
+   "webhookId": "b6f7fb4e-d6c4-51a8-ad6c-680d2cbe099b"
+  },
+  {
+   "parameters": {
+    "jsCode": "const form = $json;\nconst m = $('Mit Checkliste abgleichen').first().json;\nconst nr = $('Vorschlag speichern').first().json.id;\nconst by = String(form['Ihr Name'] || '').trim() || 'unbekannt';\nconst approve = form['Entscheidung'] === 'Alle Änderungen übernehmen';\nconst now = $now.toISO();\nconst row = (aktion, details) => ({json: {zeit: now, partner_id: m.partner_id, stadt: m.stadt, wer: by, aktion, details,\n  _approve: approve, _by: by, _now: now}});\nconst rows = [];\nif (approve) {\n  for (const c of m.changes) rows.push(row('Checkliste geändert', `${c.titel}: ${c.vorher} → ${c.status}. Beleg: „${c.satz}“ (${c.entschieden_von}). Vorschlag #${nr}`));\n  if (m.kunden !== '') rows.push(row('Kundenzahl geändert', `${m.kunden_vorher} → ${m.kunden}. Vorschlag #${nr}`));\n}\nrows.push(row(approve ? 'Vorschlag freigegeben' : 'Vorschlag abgelehnt', `Vorschlag #${nr}`));\nreturn rows;\n"
+   },
+   "id": "3ecc3dde-3b32-559e-874a-ddeca566c812",
+   "name": "Entscheidung auswerten",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3600,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "insert",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_protokoll"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "zeit": "={{ $json.zeit }}",
+      "partner_id": "={{ $json.partner_id }}",
+      "stadt": "={{ $json.stadt }}",
+      "wer": "={{ $json.wer }}",
+      "aktion": "={{ $json.aktion }}",
+      "details": "={{ $json.details }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "zeit",
+       "displayName": "zeit",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "partner_id",
+       "displayName": "partner_id",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "number",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "stadt",
+       "displayName": "stadt",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "wer",
+       "displayName": "wer",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "aktion",
+       "displayName": "aktion",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "details",
+       "displayName": "details",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "id": "2da50451-5b47-5918-a897-3356a88ea09b",
+   "name": "Protokoll schreiben",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    3820,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "update",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_vorschlaege"
+    },
+    "matchType": "allConditions",
+    "filters": {
+     "conditions": [
+      {
+       "keyName": "id",
+       "condition": "eq",
+       "keyValue": "={{ $('Vorschlag speichern').first().json.id }}"
+      }
+     ]
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "status": "={{ $('Entscheidung auswerten').first().json._approve ? 'freigegeben' : 'abgelehnt' }}",
+      "entschieden_von": "={{ $('Entscheidung auswerten').first().json._by }}",
+      "entschieden_am": "={{ $('Entscheidung auswerten').first().json._now }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "status",
+       "displayName": "status",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "entschieden_von",
+       "displayName": "entschieden_von",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "entschieden_am",
+       "displayName": "entschieden_am",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "id": "21a68604-5a60-517e-958a-b0fc81389669",
+   "name": "Vorschlag: Status setzen",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    4040,
+    200
+   ],
+   "executeOnce": true
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "update",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_partner"
+    },
+    "matchType": "allConditions",
+    "filters": {
+     "conditions": [
+      {
+       "keyName": "partner_id",
+       "condition": "eq",
+       "keyValue": "={{ $('Mit Checkliste abgleichen').first().json.partner_id }}"
+      }
+     ]
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "aktive_kunden": "={{ $('Entscheidung auswerten').first().json._approve && $('Mit Checkliste abgleichen').first().json.kunden !== '' ? Number($('Mit Checkliste abgleichen').first().json.kunden) : $('Mit Checkliste abgleichen').first().json.kunden_vorher }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "aktive_kunden",
+       "displayName": "aktive_kunden",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "number",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "id": "1041ae5c-5434-54a6-ae06-facc78f33935",
+   "name": "Partner: Kundenzahl",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    4260,
+    200
+   ],
+   "executeOnce": true
+  },
+  {
+   "parameters": {
+    "jsCode": "if (!$('Entscheidung auswerten').first().json._approve) return [];\nconst m = $('Mit Checkliste abgleichen').first().json;\nreturn m.changes.map(c => ({json: {partner_id: m.partner_id, aufgabe: c.task, status: c.status,\n  erledigt_am: c.done_on || '', notiz: c.satz.slice(0, 200)}}));\n"
+   },
+   "id": "151559b3-f37e-5132-9d98-cf19d3779cea",
+   "name": "Checklisten-Änderungen",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    4480,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "update",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_aufgaben"
+    },
+    "matchType": "allConditions",
+    "filters": {
+     "conditions": [
+      {
+       "keyName": "partner_id",
+       "condition": "eq",
+       "keyValue": "={{ $json.partner_id }}"
+      },
+      {
+       "keyName": "aufgabe",
+       "condition": "eq",
+       "keyValue": "={{ $json.aufgabe }}"
+      }
+     ]
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "status": "={{ $json.status }}",
+      "erledigt_am": "={{ $json.erledigt_am }}",
+      "notiz": "={{ $json.notiz }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "status",
+       "displayName": "status",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "erledigt_am",
+       "displayName": "erledigt_am",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "notiz",
+       "displayName": "notiz",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "id": "f6df219f-dae6-5375-bf77-3d26b00858b6",
+   "name": "Checkliste aktualisieren",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    4700,
+    200
+   ]
+  }
+ ],
+ "connections": {
+  "Partner-Update (Webhook)": {
+   "main": [
+    [
+     {
+      "node": "Eingang vorbereiten",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Testfälle (n8n Evaluations)": {
+   "main": [
+    [
+     {
+      "node": "Eingang vorbereiten",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Eingang vorbereiten": {
+   "main": [
+    [
+     {
+      "node": "Checkliste laden",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Checkliste laden": {
+   "main": [
+    [
+     {
+      "node": "Regeln: Satzteile und Punkte",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Regeln: Satzteile und Punkte": {
+   "main": [
+    [
+     {
+      "node": "KI nötig?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "KI nötig?": {
+   "main": [
+    [
+     {
+      "node": "KI: Ist der Punkt erledigt?",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Vorschlag zusammensetzen",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Ollama (lokal)": {
+   "ai_languageModel": [
+    [
+     {
+      "node": "KI: Ist der Punkt erledigt?",
+      "type": "ai_languageModel",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Antwortformat: Begründung + ja/nein": {
+   "ai_outputParser": [
+    [
+     {
+      "node": "KI: Ist der Punkt erledigt?",
+      "type": "ai_outputParser",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "KI: Ist der Punkt erledigt?": {
+   "main": [
+    [
+     {
+      "node": "Vorschlag zusammensetzen",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Vorschlag zusammensetzen": {
+   "main": [
+    [
+     {
+      "node": "Test oder echt?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Test oder echt?": {
+   "main": [
+    [
+     {
+      "node": "Mit Erwartung vergleichen",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Nur testen?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Mit Erwartung vergleichen": {
+   "main": [
+    [
+     {
+      "node": "Kennzahlen für den Test",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Nur testen?": {
+   "main": [
+    [
+     {
+      "node": "Antwort: nur Vorschlag (nichts gespeichert)",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Partner laden",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Partner laden": {
+   "main": [
+    [
+     {
+      "node": "Aufgaben des Partners laden",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Aufgaben des Partners laden": {
+   "main": [
+    [
+     {
+      "node": "Mit Checkliste abgleichen",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Mit Checkliste abgleichen": {
+   "main": [
+    [
+     {
+      "node": "Partner bekannt?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Partner bekannt?": {
+   "main": [
+    [
+     {
+      "node": "Vorschlag speichern",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Antwort: Partner unbekannt",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Vorschlag speichern": {
+   "main": [
+    [
+     {
+      "node": "Protokoll: Update eingegangen",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Protokoll: Update eingegangen": {
+   "main": [
+    [
+     {
+      "node": "Antwort: Vorschlag gespeichert",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Antwort: Vorschlag gespeichert": {
+   "main": [
+    [
+     {
+      "node": "Warten auf Freigabe (Formular)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Warten auf Freigabe (Formular)": {
+   "main": [
+    [
+     {
+      "node": "Entscheidung auswerten",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Entscheidung auswerten": {
+   "main": [
+    [
+     {
+      "node": "Protokoll schreiben",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Protokoll schreiben": {
+   "main": [
+    [
+     {
+      "node": "Vorschlag: Status setzen",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Vorschlag: Status setzen": {
+   "main": [
+    [
+     {
+      "node": "Partner: Kundenzahl",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Partner: Kundenzahl": {
+   "main": [
+    [
+     {
+      "node": "Checklisten-Änderungen",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Checklisten-Änderungen": {
+   "main": [
+    [
+     {
+      "node": "Checkliste aktualisieren",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "pinData": {},
+ "active": false,
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "tags": []
+}

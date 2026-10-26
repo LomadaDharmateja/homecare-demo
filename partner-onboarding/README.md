@@ -1,5 +1,8 @@
 # Onboarding-Cockpit (HOMECARE demo, fictional partners)
 
+**Also built entirely in n8n** (Data Tables, Code nodes, Ollama AI nodes, approval form, Evaluations, cockpit page served by n8n): see [n8n-native/README.md](n8n-native/README.md).
+
+
 New franchise partners have 90 days from contract to their first ten customers. In between: company
 registration, insurance, a five-day training, the permit from the authority (4–8 weeks), an office, the first
 helpers. Partner management follows this today with e-mails, phone calls and a spreadsheet, and often notices

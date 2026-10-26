@@ -537,6 +537,14 @@ customers while a gate task is still open → "Bitte sofort klären". A person a
 
 n8n workflow E sends the red/orange list to Telegram every weekday at 08:30.
 
+### The same project, built only in n8n
+There is also a version with **no Python at all** (`partner-onboarding/n8n-native/`): 5 n8n workflows.
+The data lives in n8n Data Tables, the rules are in Code nodes, the AI step uses n8n's Ollama + Basic LLM Chain +
+Structured Output Parser nodes, and the approval is a Wait node with a form ("the workflow waits until a person
+decides"). n8n also serves the cockpit page: http://localhost:5678/webhook/onboarding-cockpit. The rules give
+identical results to the Python version on all test messages, and the live workflow scores 47/50 with 0 wrong
+"done".
+
 ### Accuracy, with the honest history
 v1 (model reads the whole message): 7/15. v2 (model per clause): 11/15 blind, and a prompt tweak made it worse
 (6/10). v3 (rules first, model only for unclear clauses): **8/10 on a fresh blind set**. In every blind run the

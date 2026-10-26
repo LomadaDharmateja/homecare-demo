@@ -1,0 +1,1287 @@
+{
+ "id": "HCob1Einrichtung",
+ "name": "HOMECARE F1 · Onboarding (n8n): Einrichtung + Demo-Daten",
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## Einrichtung (einmal, und vor jeder Demo)\nLegt die 6 Data Tables an, leert sie und füllt sie neu:\nCheckliste (15 Punkte aus dem Handbuch), 8 erfundene Partner, ihre Aufgaben, 50 Testfälle.\nDie Partner-Tage zählen ab heute, deshalb vor einer Demo neu ausführen.",
+    "width": 620,
+    "height": 180,
+    "color": 5
+   },
+   "id": "f9322922-607f-5f71-a690-e2d1f729aa0b",
+   "name": "Notiz 1",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -40,
+    -260
+   ]
+  },
+  {
+   "parameters": {},
+   "id": "be655a55-83e7-5c1f-8e54-80875acb48a2",
+   "name": "Start",
+   "type": "n8n-nodes-base.manualTrigger",
+   "typeVersion": 1,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "httpMethod": "POST",
+    "path": "onboarding-einrichtung",
+    "responseMode": "lastNode",
+    "options": {}
+   },
+   "id": "61c890ce-8b01-5c40-977c-346e6e0aa1f2",
+   "name": "Start per Webhook",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2,
+   "position": [
+    0,
+    200
+   ],
+   "webhookId": "2f684729-3fde-5c32-b76b-0247b0147740"
+  },
+  {
+   "parameters": {
+    "resource": "table",
+    "operation": "create",
+    "tableName": "ob_checkliste",
+    "columns": {
+     "column": [
+      {
+       "name": "nr",
+       "type": "number"
+      },
+      {
+       "name": "aufgabe",
+       "type": "string"
+      },
+      {
+       "name": "phase",
+       "type": "number"
+      },
+      {
+       "name": "titel",
+       "type": "string"
+      },
+      {
+       "name": "faellig_tag",
+       "type": "number"
+      },
+      {
+       "name": "zustaendig",
+       "type": "string"
+      },
+      {
+       "name": "vor_erstem_kunden",
+       "type": "boolean"
+      },
+      {
+       "name": "stichwoerter",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {
+     "createIfNotExists": true
+    }
+   },
+   "id": "71a91ac7-cf8a-56bb-8a34-ae876263f26f",
+   "name": "Tabelle ob_checkliste",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    220,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "table",
+    "operation": "clear",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_checkliste"
+    }
+   },
+   "id": "ce143853-cb1f-5674-a553-92aef994c91b",
+   "name": "Leeren ob_checkliste",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    220,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "table",
+    "operation": "create",
+    "tableName": "ob_partner",
+    "columns": {
+     "column": [
+      {
+       "name": "partner_id",
+       "type": "number"
+      },
+      {
+       "name": "name",
+       "type": "string"
+      },
+      {
+       "name": "stadt",
+       "type": "string"
+      },
+      {
+       "name": "start",
+       "type": "string"
+      },
+      {
+       "name": "betreuer",
+       "type": "string"
+      },
+      {
+       "name": "aktive_kunden",
+       "type": "number"
+      }
+     ]
+    },
+    "options": {
+     "createIfNotExists": true
+    }
+   },
+   "id": "081cd17d-e6ae-56a7-8e5b-cb97ad913cb2",
+   "name": "Tabelle ob_partner",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    440,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "table",
+    "operation": "clear",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_partner"
+    }
+   },
+   "id": "87e88d38-1718-58f1-a9df-84e097f27666",
+   "name": "Leeren ob_partner",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    440,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "table",
+    "operation": "create",
+    "tableName": "ob_aufgaben",
+    "columns": {
+     "column": [
+      {
+       "name": "partner_id",
+       "type": "number"
+      },
+      {
+       "name": "aufgabe",
+       "type": "string"
+      },
+      {
+       "name": "status",
+       "type": "string"
+      },
+      {
+       "name": "erledigt_am",
+       "type": "string"
+      },
+      {
+       "name": "notiz",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {
+     "createIfNotExists": true
+    }
+   },
+   "id": "8e92bad9-6c73-574a-9aa6-e3a5a61705ab",
+   "name": "Tabelle ob_aufgaben",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    660,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "table",
+    "operation": "clear",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_aufgaben"
+    }
+   },
+   "id": "4cb3e714-32a7-5b1e-9976-c2f5070d9e91",
+   "name": "Leeren ob_aufgaben",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    660,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "table",
+    "operation": "create",
+    "tableName": "ob_vorschlaege",
+    "columns": {
+     "column": [
+      {
+       "name": "partner_id",
+       "type": "number"
+      },
+      {
+       "name": "stadt",
+       "type": "string"
+      },
+      {
+       "name": "eingegangen",
+       "type": "string"
+      },
+      {
+       "name": "nachricht",
+       "type": "string"
+      },
+      {
+       "name": "aenderungen",
+       "type": "string"
+      },
+      {
+       "name": "keine_aenderung",
+       "type": "string"
+      },
+      {
+       "name": "warnungen",
+       "type": "string"
+      },
+      {
+       "name": "kunden",
+       "type": "string"
+      },
+      {
+       "name": "status",
+       "type": "string"
+      },
+      {
+       "name": "entschieden_von",
+       "type": "string"
+      },
+      {
+       "name": "entschieden_am",
+       "type": "string"
+      },
+      {
+       "name": "freigabe_url",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {
+     "createIfNotExists": true
+    }
+   },
+   "id": "9d5ac5ee-9e31-58a2-8e4a-a7ae650a42a1",
+   "name": "Tabelle ob_vorschlaege",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    880,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "table",
+    "operation": "clear",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_vorschlaege"
+    }
+   },
+   "id": "22d66a5a-5e62-5878-b90f-6919b4c04e91",
+   "name": "Leeren ob_vorschlaege",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    880,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "table",
+    "operation": "create",
+    "tableName": "ob_protokoll",
+    "columns": {
+     "column": [
+      {
+       "name": "zeit",
+       "type": "string"
+      },
+      {
+       "name": "partner_id",
+       "type": "number"
+      },
+      {
+       "name": "stadt",
+       "type": "string"
+      },
+      {
+       "name": "wer",
+       "type": "string"
+      },
+      {
+       "name": "aktion",
+       "type": "string"
+      },
+      {
+       "name": "details",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {
+     "createIfNotExists": true
+    }
+   },
+   "id": "8d66e5ff-e23e-536b-ba57-83b659904480",
+   "name": "Tabelle ob_protokoll",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    1100,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "table",
+    "operation": "clear",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_protokoll"
+    }
+   },
+   "id": "82057f48-41f8-509f-8d3b-b7189046a91f",
+   "name": "Leeren ob_protokoll",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    1100,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "table",
+    "operation": "create",
+    "tableName": "ob_testfaelle",
+    "columns": {
+     "column": [
+      {
+       "name": "testset",
+       "type": "string"
+      },
+      {
+       "name": "nachricht",
+       "type": "string"
+      },
+      {
+       "name": "erwartet",
+       "type": "string"
+      },
+      {
+       "name": "kunden_erwartet",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {
+     "createIfNotExists": true
+    }
+   },
+   "id": "f65a95c8-1556-5e54-b1d9-d8b94f7a6ee7",
+   "name": "Tabelle ob_testfaelle",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    1320,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "table",
+    "operation": "clear",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_testfaelle"
+    }
+   },
+   "id": "6cfa372d-f302-5b7b-b2fe-a4038884c75b",
+   "name": "Leeren ob_testfaelle",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    1320,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "return [{\"nr\": 1, \"aufgabe\": \"software\", \"phase\": 1, \"titel\": \"Zugang zur Partnersoftware eingerichtet\", \"faellig_tag\": 3, \"zustaendig\": \"Zentrale (IT)\", \"vor_erstem_kunden\": false, \"stichwoerter\": \"software, login, zugang, passwort, password\"}, {\"nr\": 2, \"aufgabe\": \"gewerbe\", \"phase\": 1, \"titel\": \"Gewerbe angemeldet, GmbH/UG eingetragen\", \"faellig_tag\": 21, \"zustaendig\": \"Partner\", \"vor_erstem_kunden\": false, \"stichwoerter\": \"gewerbe, gmbh, ug, handelsregister, notar, business registration, registered, company\"}, {\"nr\": 3, \"aufgabe\": \"konto\", \"phase\": 1, \"titel\": \"Geschäftskonto eröffnet\", \"faellig_tag\": 21, \"zustaendig\": \"Partner\", \"vor_erstem_kunden\": false, \"stichwoerter\": \"konto, bank, sparkasse, volksbank, account\"}, {\"nr\": 4, \"aufgabe\": \"haftpflicht\", \"phase\": 1, \"titel\": \"Betriebshaftpflicht abgeschlossen (mind. 3 Mio. €)\", \"faellig_tag\": 30, \"zustaendig\": \"Partner\", \"vor_erstem_kunden\": true, \"stichwoerter\": \"haftpflicht, versicherung, police, insurance, versichert\"}, {\"nr\": 5, \"aufgabe\": \"schulung\", \"phase\": 1, \"titel\": \"Fünftägige Startschulung in Düsseldorf besucht\", \"faellig_tag\": 45, \"zustaendig\": \"Partner + Zentrale\", \"vor_erstem_kunden\": false, \"stichwoerter\": \"startschulung, schulung in düsseldorf, training, düsseldorf\"}, {\"nr\": 6, \"aufgabe\": \"antrag\", \"phase\": 2, \"titel\": \"Antrag auf Anerkennung/Zulassung gestellt\", \"faellig_tag\": 35, \"zustaendig\": \"Partner\", \"vor_erstem_kunden\": false, \"stichwoerter\": \"antrag, eingereicht, application, applied\"}, {\"nr\": 7, \"aufgabe\": \"zulassung\", \"phase\": 2, \"titel\": \"Anerkennung/Zulassung liegt schriftlich vor\", \"faellig_tag\": 80, \"zustaendig\": \"Behörde\", \"vor_erstem_kunden\": true, \"stichwoerter\": \"zulassung, anerkennung, anerkannt, bescheid, genehmig, approval, approved, zugelassen\"}, {\"nr\": 8, \"aufgabe\": \"buero\", \"phase\": 2, \"titel\": \"Büro angemietet (20-40 m²)\", \"faellig_tag\": 50, \"zustaendig\": \"Partner\", \"vor_erstem_kunden\": false, \"stichwoerter\": \"büro, buero, räume, mietvertrag, vermieter, office, lease, schlüssel\"}, {\"nr\": 9, \"aufgabe\": \"helfer\", \"phase\": 2, \"titel\": \"Erste zwei Alltagshelfer eingestellt\", \"faellig_tag\": 60, \"zustaendig\": \"Partner\", \"vor_erstem_kunden\": false, \"stichwoerter\": \"helfer, eingestellt, mitarbeiter, bewerb, personal, hired, staff, carer, helper\"}, {\"nr\": 10, \"aufgabe\": \"fuehrungszeugnis\", \"phase\": 2, \"titel\": \"Führungszeugnis und Schulung der Helfer erledigt\", \"faellig_tag\": 70, \"zustaendig\": \"Partner\", \"vor_erstem_kunden\": true, \"stichwoerter\": \"führungszeugnis, fuehrungszeugnis, background check, criminal record\"}, {\"nr\": 11, \"aufgabe\": \"vorlagen\", \"phase\": 2, \"titel\": \"Kundenvertragsvorlagen in der Partnersoftware hinterlegt\", \"faellig_tag\": 60, \"zustaendig\": \"Zentrale\", \"vor_erstem_kunden\": true, \"stichwoerter\": \"vorlage, vertragsvorlage, kundenvertrag, template\"}, {\"nr\": 12, \"aufgabe\": \"marketing\", \"phase\": 3, \"titel\": \"Lokales Marketing gestartet\", \"faellig_tag\": 65, \"zustaendig\": \"Partner\", \"vor_erstem_kunden\": false, \"stichwoerter\": \"marketing, flyer, anzeige, plakat, website, ^werbe, zeitung, advert, ads\"}, {\"nr\": 13, \"aufgabe\": \"erster_kunde\", \"phase\": 3, \"titel\": \"Erster Kundeneinsatz\", \"faellig_tag\": 75, \"zustaendig\": \"Partner\", \"vor_erstem_kunden\": false, \"stichwoerter\": \"kunde, kundin, einsatz, customer, client\"}, {\"nr\": 14, \"aufgabe\": \"zehn_kunden\", \"phase\": 3, \"titel\": \"10 aktive Kunden erreicht\", \"faellig_tag\": 90, \"zustaendig\": \"Partner\", \"vor_erstem_kunden\": false, \"stichwoerter\": \"kunden, customers, clients\"}, {\"nr\": 15, \"aufgabe\": \"abschluss\", \"phase\": 3, \"titel\": \"Abschlussgespräch Tag 90 (Businessplan vs. Ist)\", \"faellig_tag\": 90, \"zustaendig\": \"Partnermanagement\", \"vor_erstem_kunden\": false, \"stichwoerter\": \"abschlussgespräch, abschlussgespraech, final meeting\"}].map(json => ({json}));\n"
+   },
+   "id": "bf78068a-e1b5-5b96-b2f2-43f97439a559",
+   "name": "Checkliste (aus dem Handbuch)",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    220,
+    420
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "insert",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_checkliste"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "nr": "={{ $json.nr }}",
+      "aufgabe": "={{ $json.aufgabe }}",
+      "phase": "={{ $json.phase }}",
+      "titel": "={{ $json.titel }}",
+      "faellig_tag": "={{ $json.faellig_tag }}",
+      "zustaendig": "={{ $json.zustaendig }}",
+      "vor_erstem_kunden": "={{ $json.vor_erstem_kunden }}",
+      "stichwoerter": "={{ $json.stichwoerter }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "nr",
+       "displayName": "nr",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "number",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "aufgabe",
+       "displayName": "aufgabe",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "phase",
+       "displayName": "phase",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "number",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "titel",
+       "displayName": "titel",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "faellig_tag",
+       "displayName": "faellig_tag",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "number",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "zustaendig",
+       "displayName": "zustaendig",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "vor_erstem_kunden",
+       "displayName": "vor_erstem_kunden",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "boolean",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "stichwoerter",
+       "displayName": "stichwoerter",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "id": "03895a4b-f797-5970-a8f9-c229d69bd7aa",
+   "name": "Speichern in ob_checkliste",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    330,
+    600
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// Demo data: 8 invented partners at different points of their 90 days, relative to today (same as\n// data/generate_data.py). Run the setup workflow again before a demo so \"day X\" stays right.\n// Each partner: [name, city, day in onboarding, active customers, {task: [status, day done or null, note]}].\n// Tasks not listed: done on their due day if that day has passed, otherwise open.\nfunction seedRows(partners, checklist, today) {\n  const plus = (iso, n) => new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10) + n)).toISOString().slice(0, 10);\n  const partnerRows = [];\n  const taskRows = [];\n  partners.forEach(([name, city, day, customers, special], i) => {\n    const id = i + 1;\n    const start = plus(today, -(day - 1));\n    partnerRows.push({ partner_id: id, name, stadt: city, start: start, betreuer: id % 2 ? 'Frau Becker' : 'Herr Yıldız',\n      aktive_kunden: customers });\n    for (const t of checklist) {\n      let status = 'offen', doneDay = null, note = '';\n      if (special[t.id]) [status, doneDay, note] = special[t.id];\n      else if (t.due_day < day && !['erster_kunde', 'zehn_kunden'].includes(t.id)) [status, doneDay] = ['erledigt', t.due_day];\n      taskRows.push({ partner_id: id, aufgabe: t.id, status, erledigt_am: doneDay ? plus(start, doneDay - 1) : '', notiz: note });\n    }\n  });\n  return { partnerRows, taskRows };\n}\n\nconst checklist = $('Checkliste (aus dem Handbuch)').all().map(i => ({id: i.json.aufgabe, due_day: i.json.faellig_tag}));\nconst today = $now.setZone('Europe/Berlin').toISODate();\nconst s = seedRows([[\"Jana Albers\", \"Bochum\", 8, 0, {}], [\"Murat Demir\", \"Essen\", 26, 0, {\"konto\": [\"offen\", null, \"\"]}], [\"Lena und Tom Wagner\", \"Münster\", 44, 0, {\"antrag\": [\"offen\", null, \"\"]}], [\"Sven Ott\", \"Kassel\", 40, 0, {\"antrag\": [\"erledigt\", 30, \"\"], \"haftpflicht\": [\"blockiert\", null, \"Versicherer verlangt erst Handelsregisterauszug\"]}], [\"Aylin Yilmaz\", \"Regensburg\", 58, 0, {\"antrag\": [\"erledigt\", 20, \"\"], \"zulassung\": [\"offen\", null, \"\"]}], [\"Peter Brandt\", \"Lübeck\", 71, 3, {\"antrag\": [\"erledigt\", 33, \"\"], \"zulassung\": [\"offen\", null, \"\"], \"fuehrungszeugnis\": [\"offen\", null, \"\"], \"erster_kunde\": [\"erledigt\", 66, \"Kundin seit Tag 66 betreut\"]}], [\"Nora Fischer\", \"Freiburg\", 84, 4, {\"antrag\": [\"erledigt\", 25, \"\"], \"zulassung\": [\"erledigt\", 58, \"\"], \"erster_kunde\": [\"erledigt\", 70, \"\"]}], [\"Klaus Remmers\", \"Erfurt\", 96, 12, {\"antrag\": [\"erledigt\", 28, \"\"], \"zulassung\": [\"erledigt\", 61, \"\"], \"erster_kunde\": [\"erledigt\", 68, \"\"], \"zehn_kunden\": [\"erledigt\", 88, \"\"], \"abschluss\": [\"offen\", null, \"\"]}]], checklist, today);\nreturn s.partnerRows.map(json => ({json}));\n"
+   },
+   "id": "88e80123-1959-5dbe-a23c-2018a768f4d7",
+   "name": "Partner und Aufgaben erzeugen",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    520,
+    420
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "insert",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_partner"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "partner_id": "={{ $json.partner_id }}",
+      "name": "={{ $json.name }}",
+      "stadt": "={{ $json.stadt }}",
+      "start": "={{ $json.start }}",
+      "betreuer": "={{ $json.betreuer }}",
+      "aktive_kunden": "={{ $json.aktive_kunden }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "partner_id",
+       "displayName": "partner_id",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "number",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "name",
+       "displayName": "name",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "stadt",
+       "displayName": "stadt",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "start",
+       "displayName": "start",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "betreuer",
+       "displayName": "betreuer",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "aktive_kunden",
+       "displayName": "aktive_kunden",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "number",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "id": "c8e91cd7-fdaa-5a9f-8247-ed5e7a437821",
+   "name": "Speichern in ob_partner",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    630,
+    600
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "// Demo data: 8 invented partners at different points of their 90 days, relative to today (same as\n// data/generate_data.py). Run the setup workflow again before a demo so \"day X\" stays right.\n// Each partner: [name, city, day in onboarding, active customers, {task: [status, day done or null, note]}].\n// Tasks not listed: done on their due day if that day has passed, otherwise open.\nfunction seedRows(partners, checklist, today) {\n  const plus = (iso, n) => new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10) + n)).toISOString().slice(0, 10);\n  const partnerRows = [];\n  const taskRows = [];\n  partners.forEach(([name, city, day, customers, special], i) => {\n    const id = i + 1;\n    const start = plus(today, -(day - 1));\n    partnerRows.push({ partner_id: id, name, stadt: city, start: start, betreuer: id % 2 ? 'Frau Becker' : 'Herr Yıldız',\n      aktive_kunden: customers });\n    for (const t of checklist) {\n      let status = 'offen', doneDay = null, note = '';\n      if (special[t.id]) [status, doneDay, note] = special[t.id];\n      else if (t.due_day < day && !['erster_kunde', 'zehn_kunden'].includes(t.id)) [status, doneDay] = ['erledigt', t.due_day];\n      taskRows.push({ partner_id: id, aufgabe: t.id, status, erledigt_am: doneDay ? plus(start, doneDay - 1) : '', notiz: note });\n    }\n  });\n  return { partnerRows, taskRows };\n}\n\nconst checklist = $('Checkliste (aus dem Handbuch)').all().map(i => ({id: i.json.aufgabe, due_day: i.json.faellig_tag}));\nconst today = $now.setZone('Europe/Berlin').toISODate();\nreturn seedRows([[\"Jana Albers\", \"Bochum\", 8, 0, {}], [\"Murat Demir\", \"Essen\", 26, 0, {\"konto\": [\"offen\", null, \"\"]}], [\"Lena und Tom Wagner\", \"Münster\", 44, 0, {\"antrag\": [\"offen\", null, \"\"]}], [\"Sven Ott\", \"Kassel\", 40, 0, {\"antrag\": [\"erledigt\", 30, \"\"], \"haftpflicht\": [\"blockiert\", null, \"Versicherer verlangt erst Handelsregisterauszug\"]}], [\"Aylin Yilmaz\", \"Regensburg\", 58, 0, {\"antrag\": [\"erledigt\", 20, \"\"], \"zulassung\": [\"offen\", null, \"\"]}], [\"Peter Brandt\", \"Lübeck\", 71, 3, {\"antrag\": [\"erledigt\", 33, \"\"], \"zulassung\": [\"offen\", null, \"\"], \"fuehrungszeugnis\": [\"offen\", null, \"\"], \"erster_kunde\": [\"erledigt\", 66, \"Kundin seit Tag 66 betreut\"]}], [\"Nora Fischer\", \"Freiburg\", 84, 4, {\"antrag\": [\"erledigt\", 25, \"\"], \"zulassung\": [\"erledigt\", 58, \"\"], \"erster_kunde\": [\"erledigt\", 70, \"\"]}], [\"Klaus Remmers\", \"Erfurt\", 96, 12, {\"antrag\": [\"erledigt\", 28, \"\"], \"zulassung\": [\"erledigt\", 61, \"\"], \"erster_kunde\": [\"erledigt\", 68, \"\"], \"zehn_kunden\": [\"erledigt\", 88, \"\"], \"abschluss\": [\"offen\", null, \"\"]}]], checklist, today).taskRows.map(json => ({json}));\n"
+   },
+   "id": "dd009df1-a0b5-547b-8a54-2d7d455403e3",
+   "name": "Aufgaben je Partner",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    820,
+    420
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "insert",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_aufgaben"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "partner_id": "={{ $json.partner_id }}",
+      "aufgabe": "={{ $json.aufgabe }}",
+      "status": "={{ $json.status }}",
+      "erledigt_am": "={{ $json.erledigt_am }}",
+      "notiz": "={{ $json.notiz }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "partner_id",
+       "displayName": "partner_id",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "number",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "aufgabe",
+       "displayName": "aufgabe",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "status",
+       "displayName": "status",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "erledigt_am",
+       "displayName": "erledigt_am",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "notiz",
+       "displayName": "notiz",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "id": "62ff46ae-4f06-571b-afce-353f0582645e",
+   "name": "Speichern in ob_aufgaben",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    930,
+    600
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "return [{\"testset\": \"tuning\", \"nachricht\": \"Hallo Frau Becker, kurzes Update: Die Betriebshaftpflicht ist seit gestern abgeschlossen, die Police kommt per Post. Viele Grüße\", \"erwartet\": \"{\\\"haftpflicht\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"tuning\", \"nachricht\": \"Gewerbe ist angemeldet und das Geschäftskonto bei der Sparkasse ist auch eröffnet.\", \"erwartet\": \"{\\\"gewerbe\\\": \\\"erledigt\\\", \\\"konto\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"tuning\", \"nachricht\": \"Den Antrag auf Anerkennung haben wir noch nicht abgeschickt, uns fehlt noch ein Formular vom Gesundheitsamt.\", \"erwartet\": \"{\\\"antrag\\\": \\\"blockiert\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"tuning\", \"nachricht\": \"Mit dem Büro klappt es leider nicht, der Vermieter hat kurzfristig abgesagt.\", \"erwartet\": \"{\\\"buero\\\": \\\"blockiert\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"tuning\", \"nachricht\": \"Wir haben zwei Alltagshelferinnen eingestellt, beide fangen am Ersten an.\", \"erwartet\": \"{\\\"helfer\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"tuning\", \"nachricht\": \"Die Startschulung machen wir im Dezember, der Termin im Oktober war schon voll.\", \"erwartet\": \"{}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"tuning\", \"nachricht\": \"Seit Montag haben wir unseren ersten Kunden, er bekommt zweimal pro Woche Einkaufshilfe.\", \"erwartet\": \"{\\\"erster_kunde\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"1\"}, {\"testset\": \"tuning\", \"nachricht\": \"Wir betreuen jetzt 11 Kunden - das Ziel ist geschafft!\", \"erwartet\": \"{\\\"erster_kunde\\\": \\\"erledigt\\\", \\\"zehn_kunden\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"11\"}, {\"testset\": \"tuning\", \"nachricht\": \"Hallo, wie lange dauert eigentlich die Bearbeitung des Antrags bei der Behörde? Danke!\", \"erwartet\": \"{}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"tuning\", \"nachricht\": \"Der Bescheid ist da: Wir sind offiziell als Angebot zur Unterstützung im Alltag anerkannt!\", \"erwartet\": \"{\\\"antrag\\\": \\\"erledigt\\\", \\\"zulassung\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"tuning\", \"nachricht\": \"Flyer sind gedruckt und verteilt, die Anzeige im Wochenblatt erscheint am Samstag.\", \"erwartet\": \"{\\\"marketing\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"tuning\", \"nachricht\": \"Die Führungszeugnisse für beide Helfer liegen vor, die Schulung haben sie auch hinter sich.\", \"erwartet\": \"{\\\"fuehrungszeugnis\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"tuning\", \"nachricht\": \"Hi, quick update from Essen: we signed the office lease today, 32 m² near the station.\", \"erwartet\": \"{\\\"buero\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"tuning\", \"nachricht\": \"Die Versicherung zickt noch rum, die wollen erst die Handelsregistereintragung sehen. Die Eintragung dauert beim Notar noch.\", \"erwartet\": \"{\\\"haftpflicht\\\": \\\"blockiert\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"tuning\", \"nachricht\": \"Wir haben im Moment 6 Kunden, Tendenz steigend.\", \"erwartet\": \"{\\\"erster_kunde\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"6\"}, {\"testset\": \"final_test\", \"nachricht\": \"Guten Morgen! Die Haftpflichtversicherung haben wir abgeschlossen, Deckungssumme 3 Mio. Außerdem ist das Konto bei der Volksbank eingerichtet.\", \"erwartet\": \"{\\\"haftpflicht\\\": \\\"erledigt\\\", \\\"konto\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test\", \"nachricht\": \"Das Büro ist angemietet, die Schlüsselübergabe war heute. Die Helfersuche läuft noch, bisher gab es keine passenden Bewerbungen.\", \"erwartet\": \"{\\\"buero\\\": \\\"erledigt\\\", \\\"helfer\\\": \\\"blockiert\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test\", \"nachricht\": \"Ich habe den Login für die Partnersoftware immer noch nicht bekommen, können Sie da nachhaken?\", \"erwartet\": \"{\\\"software\\\": \\\"blockiert\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test\", \"nachricht\": \"Wir werden den Antrag nächste Woche einreichen.\", \"erwartet\": \"{}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test\", \"nachricht\": \"Antrag ist raus! Haben ihn gestern persönlich beim Amt abgegeben.\", \"erwartet\": \"{\\\"antrag\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test\", \"nachricht\": \"Die Startschulung in Düsseldorf war super, vielen Dank an das ganze Team!\", \"erwartet\": \"{\\\"schulung\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test\", \"nachricht\": \"Leider ist eine der beiden neuen Helferinnen wieder abgesprungen, wir suchen Ersatz.\", \"erwartet\": \"{\\\"helfer\\\": \\\"blockiert\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test\", \"nachricht\": \"Wir haben unseren ersten Einsatz für nächsten Dienstag geplant.\", \"erwartet\": \"{}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test\", \"nachricht\": \"Stand heute: 4 Kunden aktiv, 2 weitere im Erstgespräch.\", \"erwartet\": \"{\\\"erster_kunde\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"4\"}, {\"testset\": \"final_test\", \"nachricht\": \"Die Zulassung ist noch nicht da, die Behörde hat Unterlagen nachgefordert.\", \"erwartet\": \"{\\\"zulassung\\\": \\\"blockiert\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test\", \"nachricht\": \"Hello, the business registration is done and our bank account is open. Insurance is next on my list.\", \"erwartet\": \"{\\\"gewerbe\\\": \\\"erledigt\\\", \\\"konto\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test\", \"nachricht\": \"Kurze Frage: Muss das Führungszeugnis erweitert sein oder reicht das normale?\", \"erwartet\": \"{}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test\", \"nachricht\": \"Das Abschlussgespräch können wir gern am 15. machen. Bis dahin haben wir hoffentlich 10 Kunden.\", \"erwartet\": \"{}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test\", \"nachricht\": \"Unsere Website ist online und die ersten Plakate hängen. Leider hat die Druckerei die Flyer falsch gedruckt.\", \"erwartet\": \"{\\\"marketing\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test\", \"nachricht\": \"Notartermin war heute, die GmbH ist gegründet und das Gewerbe angemeldet. Die Versicherung schließen wir nächste Woche ab.\", \"erwartet\": \"{\\\"gewerbe\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_2\", \"nachricht\": \"Unser Geschäftskonto ist seit letzter Woche aktiv.\", \"erwartet\": \"{\\\"konto\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_2\", \"nachricht\": \"Die Police für die Betriebshaftpflicht ist heute gekommen.\", \"erwartet\": \"{\\\"haftpflicht\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_2\", \"nachricht\": \"Wir warten immer noch auf die Vertragsvorlagen in der Software, ohne die können wir keine Verträge machen.\", \"erwartet\": \"{\\\"vorlagen\\\": \\\"blockiert\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_2\", \"nachricht\": \"Die Anzeige in der Lokalzeitung ist erschienen und wir hatten schon drei Anrufe.\", \"erwartet\": \"{\\\"marketing\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_2\", \"nachricht\": \"Bewerbungsgespräche laufen, nächste Woche stellen wir die zweite Helferin ein.\", \"erwartet\": \"{}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_2\", \"nachricht\": \"Die Startschulung wurde leider abgesagt, weil zu wenige Teilnehmer angemeldet waren.\", \"erwartet\": \"{\\\"schulung\\\": \\\"blockiert\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_2\", \"nachricht\": \"Unser Antrag liegt seit sechs Wochen beim Landesamt, wir haben noch nichts gehört.\", \"erwartet\": \"{}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_2\", \"nachricht\": \"Wir haben 8 Kunden und zwei Alltagshelfer im Einsatz.\", \"erwartet\": \"{\\\"erster_kunde\\\": \\\"erledigt\\\", \\\"helfer\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"8\"}, {\"testset\": \"final_test_2\", \"nachricht\": \"The office is ready. Our insurance broker cancelled, so we have no liability insurance yet.\", \"erwartet\": \"{\\\"buero\\\": \\\"erledigt\\\", \\\"haftpflicht\\\": \\\"blockiert\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_2\", \"nachricht\": \"Danke für das nette Telefonat gestern!\", \"erwartet\": \"{}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_3\", \"nachricht\": \"Die Gewerbeanmeldung ist durch, das Konto bei der Commerzbank dauert noch ein paar Tage.\", \"erwartet\": \"{\\\"gewerbe\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_3\", \"nachricht\": \"Leider hat die Versicherung unseren Antrag auf Haftpflicht abgelehnt.\", \"erwartet\": \"{\\\"haftpflicht\\\": \\\"blockiert\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_3\", \"nachricht\": \"Wir sind seit heute offiziell zugelassen!\", \"erwartet\": \"{\\\"zulassung\\\": \\\"erledigt\\\", \\\"antrag\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_3\", \"nachricht\": \"Unsere erste Kundin betreuen wir seit Mittwoch.\", \"erwartet\": \"{\\\"erster_kunde\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"1\"}, {\"testset\": \"final_test_3\", \"nachricht\": \"Ich konnte an der Startschulung nicht teilnehmen, weil ich krank war.\", \"erwartet\": \"{\\\"schulung\\\": \\\"blockiert\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_3\", \"nachricht\": \"Flyer kommen nächste Woche aus der Druckerei.\", \"erwartet\": \"{}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_3\", \"nachricht\": \"We now look after 10 clients!\", \"erwartet\": \"{\\\"erster_kunde\\\": \\\"erledigt\\\", \\\"zehn_kunden\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"10\"}, {\"testset\": \"final_test_3\", \"nachricht\": \"Der Mietvertrag fürs Büro ist unterschrieben, Einzug ist am Ersten.\", \"erwartet\": \"{\\\"buero\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_3\", \"nachricht\": \"Haben Sie eine Vorlage für den Kundenvertrag?\", \"erwartet\": \"{}\", \"kunden_erwartet\": \"\"}, {\"testset\": \"final_test_3\", \"nachricht\": \"Beide Helferinnen haben ihr erweitertes Führungszeugnis abgegeben.\", \"erwartet\": \"{\\\"fuehrungszeugnis\\\": \\\"erledigt\\\"}\", \"kunden_erwartet\": \"\"}].map(json => ({json}));\n"
+   },
+   "id": "ae88f3a4-811e-5b55-8136-4721c343bd9f",
+   "name": "Testfälle (50 Nachrichten)",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1120,
+    420
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "insert",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_testfaelle"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "testset": "={{ $json.testset }}",
+      "nachricht": "={{ $json.nachricht }}",
+      "erwartet": "={{ $json.erwartet }}",
+      "kunden_erwartet": "={{ $json.kunden_erwartet }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "testset",
+       "displayName": "testset",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "nachricht",
+       "displayName": "nachricht",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "erwartet",
+       "displayName": "erwartet",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "kunden_erwartet",
+       "displayName": "kunden_erwartet",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "id": "8a5ddbea-ac18-5fc8-975b-e4833b40fd1e",
+   "name": "Speichern in ob_testfaelle",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    1230,
+    600
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const now = $now.toISO();\nreturn $('Partner und Aufgaben erzeugen').all().map(p => ({json: {zeit: now, partner_id: p.json.partner_id,\n  stadt: p.json.stadt, wer: 'System', aktion: 'Partner angelegt', details: 'Start ' + p.json.start}}));\n"
+   },
+   "id": "da7222ea-6bc1-5984-bb76-199bcb7ff602",
+   "name": "Protokoll: angelegt",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1420,
+    420
+   ]
+  },
+  {
+   "parameters": {
+    "resource": "row",
+    "operation": "insert",
+    "dataTableId": {
+     "__rl": true,
+     "mode": "name",
+     "value": "ob_protokoll"
+    },
+    "columns": {
+     "mappingMode": "defineBelow",
+     "value": {
+      "zeit": "={{ $json.zeit }}",
+      "partner_id": "={{ $json.partner_id }}",
+      "stadt": "={{ $json.stadt }}",
+      "wer": "={{ $json.wer }}",
+      "aktion": "={{ $json.aktion }}",
+      "details": "={{ $json.details }}"
+     },
+     "matchingColumns": [],
+     "schema": [
+      {
+       "id": "zeit",
+       "displayName": "zeit",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "partner_id",
+       "displayName": "partner_id",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "number",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "stadt",
+       "displayName": "stadt",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "wer",
+       "displayName": "wer",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "aktion",
+       "displayName": "aktion",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      },
+      {
+       "id": "details",
+       "displayName": "details",
+       "required": false,
+       "defaultMatch": false,
+       "display": true,
+       "type": "string",
+       "canBeUsedToMatch": true,
+       "readOnly": false,
+       "removed": false
+      }
+     ],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": false
+    },
+    "options": {}
+   },
+   "id": "6ba0c54f-57a2-503f-a7a8-a0a1df6eac9c",
+   "name": "Speichern in ob_protokoll",
+   "type": "n8n-nodes-base.dataTable",
+   "typeVersion": 1.1,
+   "position": [
+    1530,
+    600
+   ]
+  }
+ ],
+ "connections": {
+  "Start per Webhook": {
+   "main": [
+    [
+     {
+      "node": "Tabelle ob_checkliste",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Start": {
+   "main": [
+    [
+     {
+      "node": "Tabelle ob_checkliste",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Tabelle ob_checkliste": {
+   "main": [
+    [
+     {
+      "node": "Leeren ob_checkliste",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Leeren ob_checkliste": {
+   "main": [
+    [
+     {
+      "node": "Tabelle ob_partner",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Tabelle ob_partner": {
+   "main": [
+    [
+     {
+      "node": "Leeren ob_partner",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Leeren ob_partner": {
+   "main": [
+    [
+     {
+      "node": "Tabelle ob_aufgaben",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Tabelle ob_aufgaben": {
+   "main": [
+    [
+     {
+      "node": "Leeren ob_aufgaben",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Leeren ob_aufgaben": {
+   "main": [
+    [
+     {
+      "node": "Tabelle ob_vorschlaege",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Tabelle ob_vorschlaege": {
+   "main": [
+    [
+     {
+      "node": "Leeren ob_vorschlaege",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Leeren ob_vorschlaege": {
+   "main": [
+    [
+     {
+      "node": "Tabelle ob_protokoll",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Tabelle ob_protokoll": {
+   "main": [
+    [
+     {
+      "node": "Leeren ob_protokoll",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Leeren ob_protokoll": {
+   "main": [
+    [
+     {
+      "node": "Tabelle ob_testfaelle",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Tabelle ob_testfaelle": {
+   "main": [
+    [
+     {
+      "node": "Leeren ob_testfaelle",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Leeren ob_testfaelle": {
+   "main": [
+    [
+     {
+      "node": "Checkliste (aus dem Handbuch)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Checkliste (aus dem Handbuch)": {
+   "main": [
+    [
+     {
+      "node": "Speichern in ob_checkliste",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Speichern in ob_checkliste": {
+   "main": [
+    [
+     {
+      "node": "Partner und Aufgaben erzeugen",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Partner und Aufgaben erzeugen": {
+   "main": [
+    [
+     {
+      "node": "Speichern in ob_partner",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Speichern in ob_partner": {
+   "main": [
+    [
+     {
+      "node": "Aufgaben je Partner",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Aufgaben je Partner": {
+   "main": [
+    [
+     {
+      "node": "Speichern in ob_aufgaben",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Speichern in ob_aufgaben": {
+   "main": [
+    [
+     {
+      "node": "Testfälle (50 Nachrichten)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Testfälle (50 Nachrichten)": {
+   "main": [
+    [
+     {
+      "node": "Speichern in ob_testfaelle",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Speichern in ob_testfaelle": {
+   "main": [
+    [
+     {
+      "node": "Protokoll: angelegt",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Protokoll: angelegt": {
+   "main": [
+    [
+     {
+      "node": "Speichern in ob_protokoll",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "pinData": {},
+ "active": false,
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "tags": []
+}

@@ -1,0 +1,147 @@
+{
+ "id": "HCob4MorgenBerch",
+ "name": "HOMECARE F4 · Onboarding (n8n): Morgen-Bericht (Telegram)",
+ "nodes": [
+  {
+   "parameters": {
+    "content": "## Morgen-Bericht\nMo-Fr 08:30 (oder jetzt per Hand): Ampel berechnen, rote und orange Partner per Telegram an das Partnermanagement. Nur Stadt, Tag und Befund, keine Namen.",
+    "width": 560,
+    "height": 180,
+    "color": 7
+   },
+   "id": "9fab0fd3-f5a0-5745-9a0b-2c9da588380b",
+   "name": "Notiz 1",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -40,
+    -240
+   ]
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "30 8 * * 1-5"
+      }
+     ]
+    }
+   },
+   "id": "b82c8706-2c7a-5247-9691-a11972e303e3",
+   "name": "Mo-Fr 08:30",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {},
+   "id": "8a16a84d-52bf-51c5-a13d-004ff810da1b",
+   "name": "Jetzt senden",
+   "type": "n8n-nodes-base.manualTrigger",
+   "typeVersion": 1,
+   "position": [
+    0,
+    200
+   ]
+  },
+  {
+   "parameters": {
+    "workflowId": {
+     "__rl": true,
+     "value": "HCob3AmpelRegeln",
+     "mode": "id"
+    },
+    "workflowInputs": {
+     "mappingMode": "defineBelow",
+     "value": {},
+     "matchingColumns": [],
+     "schema": [],
+     "attemptToConvertTypes": false,
+     "convertFieldsToString": true
+    },
+    "options": {}
+   },
+   "id": "6a8950f3-06e1-56e0-abd8-ede833171ac9",
+   "name": "Ampel berechnen (F3)",
+   "type": "n8n-nodes-base.executeWorkflow",
+   "typeVersion": 1.2,
+   "position": [
+    240,
+    100
+   ]
+  },
+  {
+   "parameters": {
+    "chatId": "YOUR_TELEGRAM_CHAT_ID",
+    "text": "={{ $json.telegram_text }}",
+    "additionalFields": {
+     "appendAttribution": false
+    }
+   },
+   "id": "c78a3436-567f-5da3-86e4-afb639ce7ce0",
+   "name": "Telegram an Partnermanagement",
+   "type": "n8n-nodes-base.telegram",
+   "typeVersion": 1.2,
+   "position": [
+    480,
+    100
+   ],
+   "webhookId": "b9df0aa0-e320-5574-a428-a0f13d9157ed",
+   "credentials": {
+    "telegramApi": {
+     "id": "YOUR_CREDENTIAL_ID",
+     "name": "HOMECARE Telegram bot"
+    }
+   }
+  }
+ ],
+ "connections": {
+  "Mo-Fr 08:30": {
+   "main": [
+    [
+     {
+      "node": "Ampel berechnen (F3)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Jetzt senden": {
+   "main": [
+    [
+     {
+      "node": "Ampel berechnen (F3)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Ampel berechnen (F3)": {
+   "main": [
+    [
+     {
+      "node": "Telegram an Partnermanagement",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1"
+ },
+ "pinData": {},
+ "active": false,
+ "meta": {
+  "templateCredsSetupCompleted": true
+ },
+ "tags": []
+}
