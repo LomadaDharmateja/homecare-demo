@@ -3,6 +3,8 @@
 A small, local demo of automating customer-request intake for an everyday-help service
 (shopping, transport, companionship, household help for elderly people). It runs in two styles:
 
+**Step-by-step explanation of every project (prompts, tools, checks, why):** [HOW_IT_WORKS.md](HOW_IT_WORKS.md)
+
 - **Project 1, `intake-service/` (Python):** a FastAPI service where a local LLM agent (Ollama, `qwen2.5:3b`)
   picks from four predefined tools to classify a request, check for missing information, set a priority and
   draft a follow-up (written by code from the checked fields, in the customer's language). Everything goes to
