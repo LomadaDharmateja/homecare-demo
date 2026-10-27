@@ -124,6 +124,8 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
     <div class="btns" id="intake-btns"></div>
     <textarea id="intake-text" placeholder="…or type your own request (German or English)"></textarea>
     <div class="btns"><button class="btn alt" id="intake-own">Send own text</button></div>
+    <p style="margin-top:10px"><label><input type="checkbox" id="intake-live"> <b>Watch it live on the n8n canvas</b></label><br>
+      <span class="muted">First open <a href="http://localhost:5678/workflow/HomecareIntakeA1" target="homecare-n8n">Workflow A ↗</a>, click „Execute workflow“ (it then waits for a request), come back here and send. The run then lights up block by block in n8n. One request per click on „Execute workflow“.</span></p>
     <div class="result" id="intake-out"></div>
     <h3>Say</h3>
     <p class="say">"The AI reads the request and fills in a form. Code checks every fact against the original text, sets the priority and writes the draft. A person approves. Emergencies go straight to the phone."</p>
@@ -335,9 +337,14 @@ async function sendIntake(text, btn) {
   out.innerHTML = `<b>Sending…</b> <span class="muted">the local AI needs about 10–30 seconds.</span><pre>${esc(text)}</pre>`;
   const t0 = Date.now();
   try {
-    const r = await fetch("http://localhost:5678/webhook/homecare-intake", {
+    // Test URL: only answers while "Execute workflow" is waiting in the editor, and the run is shown on the canvas.
+    // Production URL: the published workflow runs in the background; the run appears under "Executions".
+    const live = document.getElementById("intake-live").checked;
+    const r = await fetch(`http://localhost:5678/${live ? "webhook-test" : "webhook"}/homecare-intake`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, channel: "web_form" }) });
-    if (!r.ok) throw new Error("n8n answered " + r.status + (r.status === 404 ? " (is workflow A active?)" : ""));
+    if (!r.ok) throw new Error("n8n answered " + r.status + (r.status === 404 ? (live
+      ? " – in Workflow A, click „Execute workflow“ first, then send again"
+      : " (is workflow A published?)") : ""));
     const j = await r.json();
     const s = ((Date.now() - t0) / 1000).toFixed(0);
     const urgent = j.urgency === "high";
@@ -349,7 +356,10 @@ async function sendIntake(text, btn) {
       <span class="muted">→ Now open „Freigabe“ in the dashboard on the right.</span>`;
     document.querySelector("#t-intake main").reload?.();
   } catch (e) {
-    out.innerHTML = `<b style="color:var(--bad)">Did not work:</b> ${esc(e.message)}<br><span class="muted">Check that n8n and the intake API are green on the Start tab.</span>`;
+    const live = document.getElementById("intake-live").checked;
+    out.innerHTML = `<b style="color:var(--bad)">Did not work:</b> ${esc(e.message)}<br><span class="muted">${live
+      ? "Live mode: in Workflow A, click „Execute workflow“ first (it must say it is waiting), then send again."
+      : "Check that n8n and the intake API are green on the Start tab."}</span>`;
   } finally { all.forEach((b) => (b.disabled = false)); }
 }
 ib.addEventListener("click", (e) => { const b = e.target.closest("[data-ex]"); if (b) sendIntake(EXAMPLES[+b.dataset.ex][1], b); });
