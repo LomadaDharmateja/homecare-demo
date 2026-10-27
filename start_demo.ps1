@@ -55,6 +55,13 @@ $ok += Start-App "4 Handbook dashboard"   "partner-handbook"  8503 "$st 8503" ""
 $ok += Start-App "5 Onboarding API"       "partner-onboarding" 8003 "$uv 8003" "/docs"
 $ok += Start-App "5 Onboarding dashboard" "partner-onboarding" 8504 "$st 8504" ""
 
+# The demo page: one tab per project, the steps on the left and the running app on the right.
+$hubPy = Join-Path $root "intake-service\.venv\Scripts\python.exe"
+if (-not (Test-Url "http://127.0.0.1:8500")) {
+    Start-Process powershell -WorkingDirectory (Join-Path $root "demo") -WindowStyle Minimized -ArgumentList "-NoExit", "-Command", "`$host.UI.RawUI.WindowTitle='HOMECARE Demo page'; & '$hubPy' -m http.server 8500 --bind 127.0.0.1"
+}
+$ok += Wait-Url "Demo page                    http://localhost:8500" "http://127.0.0.1:8500" 20
+
 # Load both models into memory now, so the first live question isn't slow.
 if ($okOllama) {
     Write-Host "Warming up the models..."
@@ -68,7 +75,6 @@ if ($ok -notcontains $false) {
     Write-Host "`nSomething did not start; see FAIL/SKIP above." -ForegroundColor Red
 }
 if (-not $NoBrowser) {
-    foreach ($u in "http://localhost:8501", "http://localhost:8502", "http://localhost:8503", "http://localhost:8504", "http://localhost:5678") {
-        if (Test-Url $u) { Start-Process $u }
-    }
+    # "localhost" (not 127.0.0.1) so the n8n login also works inside the page.
+    Start-Process "http://localhost:8500/"
 }

@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HOMECARE Demo</title>
+<!-- One local page for the live demo: each tab shows the steps on the left and the running app on the right.
+     Served by start_demo.ps1 at http://localhost:8500 (local only). All data is invented. -->
+<style>
+:root {
+  --bg: #f6f8f7; --surface: #fff; --ink: #1b2a25; --soft: #52635c; --line: #dbe5e0; --band: #eef6f3;
+  --accent: #0b7a6e; --ok: #12805c; --bad: #c0262d; --warn: #b25e09; --n8n: #6a55c9;
+  --font: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; --mono: Consolas, ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 var(--font); display: flex; flex-direction: column; }
+header { display: flex; align-items: center; gap: 14px; padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+header h1 { font-size: 17px; margin: 0; white-space: nowrap; }
+header h1 span { color: var(--soft); font-weight: 400; }
+nav { display: flex; gap: 6px; flex-wrap: wrap; }
+nav button { font: 600 14px var(--font); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 6px 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+nav button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: #c5cfca; display: inline-block; flex: none; }
+.dot.ok { background: var(--ok); } .dot.bad { background: var(--bad); }
+.tab { display: none; flex: 1; min-height: 0; }
+.tab.on { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; }
+aside { overflow-y: auto; padding: 14px 16px 24px; border-right: 1px solid var(--line); background: var(--surface); }
+aside h2 { font-size: 18px; margin: 0 0 6px; }
+aside h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--soft); margin: 16px 0 6px; }
+aside p { margin: 0 0 8px; }
+aside ol { margin: 0; padding-left: 20px; } aside ol li { margin-bottom: 6px; }
+.say { background: var(--band); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; font-style: italic; }
+.say + .say { margin-top: 6px; }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.btn { font: 600 13px var(--font); border: 0; border-radius: 8px; padding: 7px 11px; cursor: pointer; background: var(--accent); color: #fff; text-decoration: none; display: inline-block; }
+.btn.alt { background: #e7eeeb; color: var(--ink); }
+.btn.n8n { background: var(--n8n); }
+.btn.danger { background: var(--bad); }
+.btn:disabled { opacity: .55; cursor: wait; }
+.btn[aria-pressed="true"] { outline: 3px solid #e09a2d; outline-offset: 1px; }
+textarea { width: 100%; font: inherit; border: 1px solid var(--line); border-radius: 8px; padding: 8px; min-height: 64px; margin: 6px 0; }
+.result { margin-top: 8px; border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-size: 14px; background: #fbfcfb; display: none; }
+.result.on { display: block; }
+.result b.hi { color: var(--bad); }
+.result pre { white-space: pre-wrap; font: 13px/1.4 var(--mono); margin: 6px 0 0; }
+.muted { color: var(--soft); font-size: 13px; }
+code, .cmd { font: 13px var(--mono); }
+.cmd { display: flex; gap: 6px; align-items: center; background: #f1f4f3; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; margin: 4px 0; overflow-x: auto; }
+.cmd code { flex: 1; white-space: nowrap; }
+.cmd button { font: 600 12px var(--font); border: 0; background: #dfe7e3; border-radius: 6px; padding: 3px 8px; cursor: pointer; }
+main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.bar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--surface); font-size: 13px; flex-wrap: wrap; }
+.bar .url { font: 12.5px var(--mono); color: var(--soft); margin-right: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar a, .bar button { font: 600 12.5px var(--font); color: var(--accent); background: none; border: 0; cursor: pointer; text-decoration: none; padding: 2px 4px; }
+.frame { flex: 1; position: relative; min-height: 0; }
+.frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }
+.down { position: absolute; inset: 0; display: none; place-content: center; text-align: center; padding: 24px; color: var(--soft); }
+.down.on { display: grid; }
+.grid { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: 14px; }
+.home { padding: 20px; overflow-y: auto; }
+.home .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin-top: 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; cursor: pointer; text-align: left; font: inherit; color: inherit; }
+.card b { display: block; font-size: 15px; margin-bottom: 4px; }
+@media (max-width: 860px) {
+  .tab.on { grid-template-columns: 1fr; grid-template-rows: auto 70vh; }
+  aside { border-right: 0; border-bottom: 1px solid var(--line); }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>HOMECARE Demo <span>· invented data, everything local</span></h1>
+  <nav id="nav" role="tablist"></nav>
+</header>
+
+<!-- ============ START ============ -->
+<section class="tab" id="t-start">
+  <aside>
+    <h2>Before the call</h2>
+    <ol>
+      <li>All lights below are green. If not: run <code>start_demo.ps1</code> again.</li>
+      <li>Reset the demo data (buttons and commands below).</li>
+      <li>Send one test request in tab <b>1</b> and check that the phone buzzes.</li>
+      <li>Close mail, chat, Steam. Notifications off. Phone on the desk, silent.</li>
+      <li>Share <b>this browser tab</b> only.</li>
+    </ol>
+    <h3>Services</h3>
+    <div class="grid" id="svc"></div>
+    <p style="margin-top:8px"><button class="btn alt" id="recheck">Check again</button></p>
+    <h3>Reset demo data</h3>
+    <p class="muted">Onboarding, n8n version (instant):</p>
+    <div class="btns"><button class="btn danger" data-reset>Reset onboarding (n8n)</button></div>
+    <div class="result" id="reset-out"></div>
+    <p class="muted" style="margin-top:10px">Intake and onboarding (Python version), in PowerShell from the <code>homecare-demo</code> folder:</p>
+    <div class="cmd"><code>cd intake-service; .\.venv\Scripts\python.exe data\reset_demo.py; cd ..</code><button data-copy>Copy</button></div>
+    <div class="cmd"><code>cd partner-onboarding; .\.venv\Scripts\python.exe data\generate_data.py; cd ..</code><button data-copy>Copy</button></div>
+    <h3>If something breaks live</h3>
+    <p>"Live demos, of course. Here is the same flow as a recording." Open the portfolio and play the clip. Don't debug live.</p>
+    <div class="btns"><a class="btn alt" href="https://lomadadharmateja.github.io/homecare-demo/#projekte" target="_blank" rel="noopener">Portfolio with clips ↗</a></div>
+  </aside>
+  <main class="home">
+    <h2 style="margin:0">Five projects, one idea</h2>
+    <p class="say" style="margin-top:8px;max-width:75ch">"AI only reads and understands. Code checks and calculates. A person approves. Everything is logged."</p>
+    <p class="muted" style="margin-top:12px">Suggested order if time is short: <b>1 Intake</b> (2 min), then <b>5 Onboarding</b> (3 min). The others if they ask.</p>
+    <div class="cards" id="cards"></div>
+  </main>
+</section>
+
+<!-- ============ 1 INTAKE ============ -->
+<section class="tab" id="t-intake">
+  <aside>
+    <h2>1 · Request intake</h2>
+    <p><b>Problem:</b> requests come by form, email and phone notes. Someone reads, sorts and prioritises each one, and urgent cases can get lost.</p>
+    <h3>Show it</h3>
+    <ol>
+      <li>Click <b>Emergency</b>. It goes through the n8n webhook, as a web form would (10–30 s).</li>
+      <li>The phone buzzes: Telegram alert with only case number, service and city.</li>
+      <li>Below: what the AI extracted and code checked, plus the draft reply.</li>
+      <li>Right: <b>„Offene Anfragen“</b> is sorted by urgency. Open <b>„Freigabe“</b> and approve the draft. Nothing is sent automatically.</li>
+      <li>Then click <b>Missing info</b>: it detects what's missing (here: the city) and asks for it in the draft.</li>
+    </ol>
+    <h3>Send a request</h3>
+    <div class="btns" id="intake-btns"></div>
+    <textarea id="intake-text" placeholder="…or type your own request (German or English)"></textarea>
+    <div class="btns"><button class="btn alt" id="intake-own">Send own text</button></div>
+    <div class="result" id="intake-out"></div>
+    <h3>Say</h3>
+    <p class="say">"The AI reads the request and fills in a form. Code checks every fact against the original text, sets the priority and writes the draft. A person approves. Emergencies go straight to the phone."</p>
+    <p class="say">„Jede Anfrage wird in Sekunden sortiert und geprüft. Notfälle landen sofort auf dem Handy. Das Büro gibt nur noch Entwürfe frei.“</p>
+    <p class="muted">Accuracy: 54% in the first version → 18/20 on unseen test cases, 6/6 urgent cases caught.</p>
+  </aside>
+  <main data-views='[["Dashboard","http://localhost:8501"],["API docs","http://localhost:8000/docs"]]'></main>
+</section>
+
+<!-- ============ 2 N8N ============ -->
+<section class="tab" id="t-n8n">
+  <aside>
+    <h2>2 · n8n workflows</h2>
+    <p><b>Problem:</b> not everything should be custom code. Colleagues should be able to see and change a process themselves.</p>
+    <h3>Show it</h3>
+    <ol>
+      <li><b>Workflow A</b>: webhook → AI service → IF urgent → Telegram, plus a CSV log line.</li>
+      <li>Click <b>„Executions“</b> (top of the canvas) and open the run from tab 1: every block shows its data.</li>
+      <li><b>Workflow B</b>: every morning, overdue callbacks → summary.</li>
+      <li><b>F2 Onboarding</b>: the same idea built only with n8n blocks (data tables, AI nodes, approval form).</li>
+      <li>If they want the big picture: <b>Diagrams</b> shows all workflows as clickable blocks.</li>
+    </ol>
+    <p class="muted">The buttons with ↗ open the n8n editor in its own browser tab (n8n doesn't allow being shown inside another page). Switch back to this tab afterwards. Log in to n8n once before the call.</p>
+    <h3>Say</h3>
+    <p class="say">"n8n is the wiring: trigger in, ask the service, hand out the result. Anyone on the team can open it and see what happens step by step, without reading code."</p>
+    <p class="say">„n8n verbindet die Systeme. Jeder im Team kann den Ablauf sehen und verstehen, ohne Code zu lesen.“</p>
+  </aside>
+  <main data-views='[["Diagrams","https://lomadadharmateja.github.io/homecare-demo/workflows.html#n8n"],["Workflow A ↗","http://localhost:5678/workflow/HomecareIntakeA1","ext"],["Workflow B ↗","http://localhost:5678/workflow/HomecareOverdueB","ext"],["F2 Onboarding ↗","http://localhost:5678/workflow/HCob2PartnerUpd0","ext"],["All workflows ↗","http://localhost:5678/home/workflows","ext"]]'></main>
+</section>
+
+<!-- ============ 3 ANALYTICS ============ -->
+<section class="tab" id="t-analytics">
+  <aside>
+    <h2>3 · Questions to the partner data</h2>
+    <p><b>Problem:</b> head office has numbers for 55 locations. For every question someone builds an Excel sheet by hand.</p>
+    <h3>Show it</h3>
+    <ol>
+      <li>Right: choose a question under <b>„Beispielfragen“</b>, e.g. the first one (friends vs. couples vs. solo founders), then <b>„Fragen“</b>.</li>
+      <li>Show the answer, the chart and <b>„So wurde gerechnet“</b>: the form the AI filled in. Python did the maths.</li>
+      <li>Ask the English one ("Which locations are furthest below their business plan?").</li>
+      <li>Tab <b>„Wochenbericht & Hinweise“</b> → <b>„Bericht dieser Woche erstellen“</b>: early warnings. n8n sends this every Monday.</li>
+    </ol>
+    <h3>Say</h3>
+    <p class="say">"The AI only understands the question and fills in a query form. Python calculates every number, so the answer can't invent a figure."</p>
+    <p class="say">„Die KI versteht die Frage, aber Python rechnet. Deshalb ist jede Zahl richtig und nachprüfbar.“</p>
+    <p class="muted">10/10 German test questions, 13/15 English on the first try.</p>
+  </aside>
+  <main data-views='[["Dashboard","http://localhost:8502"],["API docs","http://localhost:8001/docs"]]'></main>
+</section>
+
+<!-- ============ 4 HANDBOOK ============ -->
+<section class="tab" id="t-handbook">
+  <aside>
+    <h2>4 · Handbook assistant</h2>
+    <p><b>Problem:</b> partners call head office with the same questions again and again, although the answer is in a 100-page handbook.</p>
+    <h3>Show it (choose under „Beispielfragen“, then „Fragen“)</h3>
+    <ol>
+      <li><b>„Bis wann muss ich mit der Pflegekasse abrechnen?“</b> → answer only from the handbook, with section and department.</li>
+      <li><b>„Meine Kundin ist gestürzt und atmet schwer!“</b> → "call 112" first, fixed text, no AI.</li>
+      <li><b>„Welche Software empfiehlt die Zentrale für die Buchhaltung?“</b> → not in the handbook: it says so honestly.</li>
+      <li>Tab <b>„Wissenslücken“</b>: that question is now collected, so head office knows what to add.</li>
+      <li>The English question works too; the answer stays English.</li>
+    </ol>
+    <h3>Say</h3>
+    <p class="say">"Answers come only from the handbook, with the source. If it's not in there, it says so and collects the question as a knowledge gap."</p>
+    <p class="say">„Partner fragen das Handbuch statt die Zentrale. Was nicht drinsteht, wird gesammelt.“</p>
+    <p class="muted">14/15 on unseen test questions; all 3 questions the handbook can't answer were correctly refused.</p>
+  </aside>
+  <main data-views='[["Dashboard","http://localhost:8503"],["API docs","http://localhost:8002/docs"]]'></main>
+</section>
+
+<!-- ============ 5 ONBOARDING ============ -->
+<section class="tab" id="t-onboarding">
+  <aside>
+    <h2>5 · Onboarding cockpit</h2>
+    <p><b>Problem:</b> a new partner has 90 days to reach 10 customers. Insurance, permit, training are tracked by email and spreadsheet, so problems show up late.</p>
+    <h3>Show it (n8n version)</h3>
+    <ol>
+      <li>Traffic lights: every finding says which rule fired and why. Code only, no AI.</li>
+      <li>Scroll to <b>„Neues Partner-Update senden“</b>: choose <b>Essen</b>, click the first example ("Wir haben schon 3 Kunden! …"), then <b>„Vorschlag erstellen“</b>.</li>
+      <li>The proposal shows: office done, insurance blocked, 3 customers, and a <b>warning</b>: customers without insurance. Nothing changed yet.</li>
+      <li><b>„Prüfen und freigeben“</b> opens the n8n form: enter your name, „Alle Änderungen übernehmen“.</li>
+      <li>Click <b>Reload</b> above the cockpit: Essen is now red, and the audit log shows who approved, with the evidence sentence.</li>
+      <li>Optional: <b>F2 in the editor</b> → „Executions“ to show the run, block by block.</li>
+    </ol>
+    <div class="btns"><button class="btn danger" data-reset>Reset demo data first</button></div>
+    <div class="result" id="reset-out-5"></div>
+    <h3>Say</h3>
+    <p class="say">"Partners keep writing emails. The system turns them into proposals for the checklist, each with the sentence it's based on, and a person approves. I built it twice, in n8n only and with a Python API, and both give the same results."</p>
+    <p class="say">„Neue Partner schreiben einfach E-Mails. Das System macht daraus Vorschläge, ein Mensch gibt frei, und die Ampel zeigt früh, wer in Gefahr ist.“</p>
+    <p class="muted">47/50 through the live n8n workflow, and never once marked a task as done that wasn't.</p>
+  </aside>
+  <main data-views='[["Cockpit (n8n)","http://localhost:5678/webhook/onboarding-cockpit"],["F2 in the editor ↗","http://localhost:5678/workflow/HCob2PartnerUpd0","ext"],["Python dashboard","http://localhost:8504"]]'></main>
+</section>
+
+<script>
+const TABS = [
+  ["start", "Start", null],
+  ["intake", "1 Intake", "http://localhost:8501"],
+  ["n8n", "2 n8n", "http://localhost:5678/healthz"],
+  ["analytics", "3 Analytics", "http://localhost:8502"],
+  ["handbook", "4 Handbook", "http://localhost:8503"],
+  ["onboarding", "5 Onboarding", "http://localhost:5678/healthz"],
+];
+const SERVICES = [
+  ["n8n", "http://localhost:5678/healthz"], ["Ollama (local AI)", "http://localhost:11434"],
+  ["1 Intake API", "http://localhost:8000/docs"], ["1 Intake dashboard", "http://localhost:8501"],
+  ["3 Analytics API", "http://localhost:8001/docs"], ["3 Analytics dashboard", "http://localhost:8502"],
+  ["4 Handbook API", "http://localhost:8002/docs"], ["4 Handbook dashboard", "http://localhost:8503"],
+  ["5 Onboarding API", "http://localhost:8003/docs"], ["5 Onboarding dashboard", "http://localhost:8504"],
+];
+const CARDS = {
+  intake: ["1 · Request intake", "Emergency in, phone buzzes, person approves the draft."],
+  n8n: ["2 · n8n workflows", "The same flows as visual blocks anyone can read."],
+  analytics: ["3 · Partner analytics", "Ask the numbers in German; Python does the maths."],
+  handbook: ["4 · Handbook assistant", "Answers only from the handbook, with the source."],
+  onboarding: ["5 · Onboarding cockpit", "Partner emails become checklist proposals, built in n8n."],
+};
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// Is a local service answering? no-cors: we can't read the reply, but the request only fails if nothing listens.
+async function up(url) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 2500);
+  try { await fetch(url, { mode: "no-cors", cache: "no-store", signal: ctl.signal }); return true; }
+  catch (e) { return false; }
+  finally { clearTimeout(timer); }
+}
+
+// ---- tabs ----
+const nav = document.getElementById("nav");
+nav.innerHTML = TABS.map(([id, label, check]) =>
+  `<button role="tab" data-tab="${id}" aria-selected="false">${check ? `<span class="dot" data-check="${check}"></span>` : ""}${label}</button>`).join("");
+function show(id) {
+  if (!document.getElementById("t-" + id)) id = "start";
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t.id === "t-" + id));
+  nav.querySelectorAll("button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === id)));
+  const main = document.querySelector(`#t-${id} main[data-views]`);
+  if (main && !main.dataset.ready) buildViews(main);  // load an app only when its tab is first opened
+  if (location.hash.slice(1) !== id) history.replaceState(null, "", "#" + id);
+}
+nav.addEventListener("click", (e) => { const b = e.target.closest("button[data-tab]"); if (b) show(b.dataset.tab); });
+document.getElementById("cards").innerHTML = Object.entries(CARDS).map(([id, [t, d]]) =>
+  `<button class="card" data-go="${id}"><b>${t}</b><span class="muted">${d}</span></button>`).join("");
+document.addEventListener("click", (e) => { const c = e.target.closest("[data-go]"); if (c) show(c.dataset.go); });
+
+// ---- app frames: one iframe per tab, kept alive so switching tabs doesn't lose state ----
+function buildViews(main) {
+  main.dataset.ready = "1";
+  const views = JSON.parse(main.dataset.views);
+  main.innerHTML = `<div class="bar">${views.length > 1 ? views.map(([n], i) =>
+      `<button class="btn ${i ? "alt" : ""}" data-view="${i}" aria-pressed="${!i}">${esc(n)}</button>`).join("") : ""}
+    <span class="url"></span><button data-reload>↻ Reload</button><a target="_blank" rel="noopener" data-newtab>Open in new tab ↗</a></div>
+    <div class="frame"><iframe title="App"></iframe><div class="down"><div><b>This app is not running.</b><br>Run <code>start_demo.ps1</code>, then click Reload.</div></div></div>`;
+  const frame = main.querySelector("iframe"), down = main.querySelector(".down");
+  const open = async (i) => {
+    const url = views[i][1];
+    main.querySelectorAll("[data-view]").forEach((b) => {
+      const on = +b.dataset.view === i;
+      b.setAttribute("aria-pressed", String(on)); b.classList.toggle("alt", !on);
+    });
+    main.querySelector(".url").textContent = url;
+    main.querySelector("[data-newtab]").href = url;
+    main.dataset.current = i;
+    const local = url.startsWith("http://localhost");
+    const ok = !local || (await up(url));
+    down.classList.toggle("on", !ok);
+    frame.src = ok ? url : "about:blank";
+  };
+  main.addEventListener("click", (e) => {
+    const v = e.target.closest("[data-view]");
+    // n8n's editor refuses to load inside another page (X-Frame-Options), so it opens in its own browser tab.
+    // The same named tab is reused, so repeated clicks don't pile up tabs.
+    if (v && views[+v.dataset.view][2] === "ext") { window.open(views[+v.dataset.view][1], "homecare-n8n"); return; }
+    if (v) open(+v.dataset.view);
+    if (e.target.closest("[data-reload]")) open(+main.dataset.current);
+  });
+  main.reload = () => open(+main.dataset.current);
+  open(0);
+}
+
+// ---- status lights ----
+async function check() {
+  const box = document.getElementById("svc");
+  box.innerHTML = SERVICES.map(([n]) => `<span>${n}</span><span class="dot"></span>`).join("");
+  const dots = box.querySelectorAll(".dot");
+  await Promise.all(SERVICES.map(async ([, url], i) => dots[i].classList.add((await up(url)) ? "ok" : "bad")));
+  document.querySelectorAll("nav .dot").forEach(async (d) => {
+    d.classList.remove("ok", "bad"); d.classList.add((await up(d.dataset.check)) ? "ok" : "bad");
+  });
+}
+document.getElementById("recheck").onclick = check;
+
+// ---- project 1: send a request through the n8n webhook, as a web form would ----
+const EXAMPLES = [
+  ["Emergency", "Meine Mutter (86) ist heute früh in ihrer Wohnung in Neuss gestürzt. Sie ist jetzt allein und sehr unsicher. Kann heute noch jemand bei ihr bleiben? Bitte rufen Sie mich sofort zurück."],
+  ["Missing info", "Könnte jemand meinen Vater nächsten Mittwoch um 10 Uhr zur Physiotherapie fahren? Er geht mit Rollator."],
+  ["Shopping", "Guten Tag, wir suchen ab nächster Woche Hilfe beim Einkaufen für meine Oma in Köln. Bitte rufen Sie mich nachmittags an."],
+  ["Unclear", "Hallo, eine Bekannte hat Sie empfohlen. Was für Hilfe bieten Sie eigentlich an?"],
+  ["Emergency (English)", "My father (84) fell in the kitchen in Neuss this morning. He is okay but shaky and alone. Can someone stay with him today? Please call me back as soon as possible."],
+];
+const ib = document.getElementById("intake-btns");
+ib.innerHTML = EXAMPLES.map(([n], i) => `<button class="btn ${i ? "alt" : ""}" data-ex="${i}" title="${esc(EXAMPLES[i][1])}">${n}</button>`).join("");
+async function sendIntake(text, btn) {
+  const out = document.getElementById("intake-out");
+  const all = document.querySelectorAll("#t-intake aside .btn");
+  all.forEach((b) => (b.disabled = true));
+  out.classList.add("on");
+  out.innerHTML = `<b>Sending…</b> <span class="muted">the local AI needs about 10–30 seconds.</span><pre>${esc(text)}</pre>`;
+  const t0 = Date.now();
+  try {
+    const r = await fetch("http://localhost:5678/webhook/homecare-intake", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, channel: "web_form" }) });
+    if (!r.ok) throw new Error("n8n answered " + r.status + (r.status === 404 ? " (is workflow A active?)" : ""));
+    const j = await r.json();
+    const s = ((Date.now() - t0) / 1000).toFixed(0);
+    const urgent = j.urgency === "high";
+    out.innerHTML = `<b>Case #${esc(j.id)}</b> <span class="muted">in ${s} s</span><br>
+      Service: <b>${esc(j.service_type)}</b> · City: <b>${esc(j.location || "–")}</b> · Urgency: <b class="${urgent ? "hi" : ""}">${esc(j.urgency)}</b> · Priority: <b>${esc(j.priority)}</b><br>
+      Callback: ${j.callback_requested ? "yes" : "no"} · Missing: <b>${esc((j.missing_info || []).join(", ") || "nothing")}</b><br>
+      ${urgent ? "📱 <b>Telegram alert sent</b> (case number, service, city only).<br>" : ""}
+      Status: ${esc(j.followup_status)}<pre>${esc(j.followup_draft || "")}</pre>
+      <span class="muted">→ Now open „Freigabe“ in the dashboard on the right.</span>`;
+    document.querySelector("#t-intake main").reload?.();
+  } catch (e) {
+    out.innerHTML = `<b style="color:var(--bad)">Did not work:</b> ${esc(e.message)}<br><span class="muted">Check that n8n and the intake API are green on the Start tab.</span>`;
+  } finally { all.forEach((b) => (b.disabled = false)); }
+}
+ib.addEventListener("click", (e) => { const b = e.target.closest("[data-ex]"); if (b) sendIntake(EXAMPLES[+b.dataset.ex][1], b); });
+document.getElementById("intake-own").onclick = () => {
+  const t = document.getElementById("intake-text").value.trim();
+  if (t) sendIntake(t);
+};
+
+// ---- project 5: reset the n8n demo data (two clicks, no browser dialog) ----
+document.querySelectorAll("[data-reset]").forEach((btn) => {
+  const out = btn.closest("aside").querySelector(".result");
+  const label = btn.textContent;
+  btn.onclick = async () => {
+    if (!btn.dataset.armed) {
+      btn.dataset.armed = "1"; btn.textContent = "Sure? Click again to reset";
+      setTimeout(() => { delete btn.dataset.armed; btn.textContent = label; }, 4000);
+      return;
+    }
+    delete btn.dataset.armed; btn.disabled = true; btn.textContent = "Resetting…";
+    out.classList.add("on");
+    try {
+      const r = await fetch("http://localhost:5678/webhook/onboarding-einrichtung", { method: "POST" });
+      if (!r.ok) throw new Error("n8n answered " + r.status);
+      out.innerHTML = "✅ Demo data reset: 8 partners, days counted from today, no open proposals.";
+      document.querySelector("#t-onboarding main").reload?.();
+    } catch (e) { out.innerHTML = `<b style="color:var(--bad)">Did not work:</b> ${esc(e.message)}`; }
+    finally { btn.disabled = false; btn.textContent = label; }
+  };
+});
+
+// ---- copy buttons ----
+document.querySelectorAll("[data-copy]").forEach((b) => b.onclick = async () => {
+  try { await navigator.clipboard.writeText(b.previousElementSibling.textContent); b.textContent = "Copied"; }
+  catch (e) { b.textContent = "Select + Ctrl+C"; }
+  setTimeout(() => (b.textContent = "Copy"), 1500);
+});
+
+window.addEventListener("hashchange", () => show(location.hash.slice(1)));
+show(location.hash.slice(1) || "start");
+check();
+</script>
+</body>
+</html>
